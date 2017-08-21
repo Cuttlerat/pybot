@@ -195,7 +195,7 @@ def wset(bot, update, args):
 
     bot.send_message( chat_id = update.message.chat_id, text = out_text )
     log_dict = {'timestamp': log_timestamp(), 
-                     'city': args, 
+                     'city': city, 
                  'username': update.message.from_user.username }
     print("{timestamp}: wset {city} by @{username}".format(**log_dict))
 
@@ -244,6 +244,45 @@ def loglist(bot, update, args):
 
 #==== End of loglist function ===============================================
 
+def parser(bot, update):
+
+    in_text = update.message.text.lower().replace('ё','е')
+    conn = sqlite3.connect('data/pybot.db')
+    db = conn.cursor()
+
+    db_check = db.execute('''
+    SELECT EXISTS(SELECT 1 FROM ping_phrases WHERE "{0}" LIKE '%'||ping_phrases.phrase||'%') LIMIT 1
+    '''.format(in_text)).fetchone()
+
+    if 1 in db_check:
+        out_text = " ".join([ i for i in db.execute('''
+            SELECT DISTINCT username FROM pingers WHERE "{0}" LIKE '%'||pingers.match||'%'
+            '''.format(in_text)).fetchall() for i in i ])
+        if 'EVERYONE GET IN HERE' in out_text:
+            pingers_check = db.execute('''
+                SELECT EXISTS(SELECT 1 FROM ping_exclude WHERE "{0}" LIKE '%'||ping_exclude.match||'%') LIMIT 1
+                '''.format(in_text)).fetchone()
+            if 1 in pingers_check:
+                out_text = " ".join([ i for i in db.execute('''
+                SELECT DISTINCT username FROM pingers WHERE "{0} {1}" NOT LIKE '%'||username||'%'
+                '''.format(update.message.from_user.username, out_text)).fetchall() for i in i ])
+            else:
+                out_text = " ".join([ i for i in db.execute('''
+                SELECT DISTINCT username FROM pingers WHERE pingers.username NOT LIKE "EVERYONE GET IN HERE" AND pingers.username NOT LIKE "{0}"
+                '''.format(update.message.from_user.username)).fetchall() for i in i ])
+
+    conn.commit()
+    conn.close()
+
+    if out_text:
+        out_text = " ".join([ "@"+i for i in out_text.split(' ') ])
+        bot.send_message( chat_id = update.message.chat_id, text = out_text )
+        log_dict = {'timestamp': log_timestamp(), 
+                      'pingers': pingers, 
+                     'username': update.message.from_user.username }
+        print("{timestamp}: ping {pingers} by @{username}".format(**log_dict))
+
+
 def log_timestamp():
     return(datetime.now(tzlocal()).strftime("[%d/%b/%Y:%H:%M:%S %z]"))
 
@@ -259,5 +298,6 @@ dispatcher.add_handler(CommandHandler('w', weather, pass_args=True))
 dispatcher.add_handler(CommandHandler('wset', wset, pass_args=True))
 dispatcher.add_handler(CommandHandler('ibash', ibash, pass_args=True))
 dispatcher.add_handler(CommandHandler('loglist', loglist, pass_args=True))
+dispatcher.add_handler(MessageHandler(Filters.text, parser))
 
 updater.start_polling()
