@@ -141,8 +141,8 @@ def weather(bot, update, args):
     *Noon:* {17} {18} {19}
     *Evening:* {20} {21} {22}
     """.format(now_time,
-               now_emoji,
                now_temp,
+               now_emoji,
                now_comment,
                now_city,
                *[ weather[i] for i in weather ] ))
