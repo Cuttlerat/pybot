@@ -2,6 +2,7 @@
 import json
 import requests
 import pytz 
+import sqlite3
 
 from bs4 import BeautifulSoup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
@@ -78,7 +79,24 @@ def get_emoji(emoji_code):
 
 def weather(bot, update, args):
 
-    city = ' '.join(args) if args else 'Ленинград'
+    conn = sqlite3.connect('data/pybot.db')
+    db = conn.cursor()
+
+    db_check = db.execute('''
+    SELECT EXISTS(SELECT 1 FROM locations WHERE "{0}" LIKE locations.username) LIMIT 1
+    '''.format(update.message.from_user.username)).fetchone()
+
+    if 1 in db_check:
+        city = ''.join(db.execute('''
+        SELECT city FROM locations WHERE "{0}" LIKE locations.username
+        '''.format(update.message.from_user.username)).fetchone())
+    else:
+        city = ' '.join(args) if args else ''.join(db.execute('''
+                                            SELECT city FROM locations WHERE username="default_city"
+                                            ''').fetchone())
+
+    conn.commit()
+    conn.close()
 
     w_params = {        'q': city, 
                       'key': WEATHER_TOKEN, 
@@ -141,6 +159,47 @@ def weather(bot, update, args):
 
 #==== End of weather function ===============================================
 
+def wset(bot, update, args):
+
+    city = "".join(args)
+    conn = sqlite3.connect('data/pybot.db')
+    db = conn.cursor()
+
+    db_check = db.execute('''
+    SELECT EXISTS(SELECT 1 FROM locations WHERE "{0}" LIKE locations.username) LIMIT 1
+    '''.format(update.message.from_user.username)).fetchone()
+
+    if 1 in db_check:
+        if not city or city == "delete":
+            db.execute('''
+            DELETE FROM locations WHERE "{0}" LIKE locations.username
+            '''.format(update.message.from_user.username))
+            out_text = "Deleted information about @{0}".format(update.message.from_user.username)
+        else:
+            db.execute('''
+            UPDATE locations SET city="{1}" WHERE username="{0}"
+            '''.format(update.message.from_user.username, city))
+            out_text = "New city for @{0}: {1}".format(update.message.from_user.username,city)
+    else:
+        if not city or "delete" in city:
+            out_text = "No informaton about @{0}".format(update.message.from_user.username)
+
+        else:
+            db.execute('''
+            INSERT INTO locations(username,city) VALUES("{0}","{1}")
+            '''.format(update.message.from_user.username,city))
+            out_text = "Added @{0}: {1}".format(update.message.from_user.username,city)
+
+    conn.commit()
+    conn.close()
+
+    bot.send_message( chat_id = update.message.chat_id, text = out_text )
+    log_dict = {'timestamp': log_timestamp(), 
+                     'city': args, 
+                 'username': update.message.from_user.username }
+    print("{timestamp}: wset {city} by @{username}".format(**log_dict))
+
+
 def ibash(bot, update, args):
 
     count = int(''.join(args)) if ''.join(args).isdigit() else 1
@@ -197,6 +256,7 @@ dispatcher = updater.dispatcher
 dispatcher.add_handler(CommandHandler('start', start))
 dispatcher.add_handler(CommandHandler('weather', weather, pass_args=True))
 dispatcher.add_handler(CommandHandler('w', weather, pass_args=True))
+dispatcher.add_handler(CommandHandler('wset', wset, pass_args=True))
 dispatcher.add_handler(CommandHandler('ibash', ibash, pass_args=True))
 dispatcher.add_handler(CommandHandler('loglist', loglist, pass_args=True))
 
