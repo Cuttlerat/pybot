@@ -102,3 +102,6 @@ ENV/
 
 # tokens
 tokens.py
+
+# db
+data/
