@@ -298,38 +298,41 @@ def parser(bot, update):
     db = conn.cursor()
     out_text = ""
     
-    db_check = db.execute('''
-    SELECT EXISTS(SELECT 1 FROM ping_phrases WHERE "{0}" LIKE '%'||ping_phrases.phrase||'%') LIMIT 1
-    '''.format(in_text)).fetchone()
+    try:
+        db_check = db.execute('''
+        SELECT EXISTS(SELECT 1 FROM ping_phrases WHERE "{0}" LIKE '%'||ping_phrases.phrase||'%') LIMIT 1
+        '''.format(in_text)).fetchone()
 
-    if 1 in db_check:
-        out_text = " ".join([ i for i in db.execute('''
-            SELECT DISTINCT username FROM pingers WHERE "{0}" LIKE '%'||pingers.match||'%'
-            '''.format(in_text)).fetchall() for i in i ])
-        if 'EVERYONE GET IN HERE' in out_text:
-            pingers_check = db.execute('''
-                SELECT EXISTS(SELECT 1 FROM ping_exclude WHERE "{0}" LIKE '%'||ping_exclude.match||'%') LIMIT 1
-                '''.format(in_text)).fetchone()
-            if 1 in pingers_check:
-                out_text = " ".join([ i for i in db.execute('''
-                SELECT DISTINCT username FROM pingers WHERE "{0} {1}" NOT LIKE '%'||username||'%'
-                '''.format(update.message.from_user.username, out_text)).fetchall() for i in i ])
-            else:
-                out_text = " ".join([ i for i in db.execute('''
-                SELECT DISTINCT username FROM pingers WHERE pingers.username NOT LIKE "EVERYONE GET IN HERE" AND pingers.username NOT LIKE "{0}"
-                '''.format(update.message.from_user.username)).fetchall() for i in i ])
+        if 1 in db_check:
+            out_text = " ".join([ i for i in db.execute('''
+                SELECT DISTINCT username FROM pingers WHERE "{0}" LIKE '%'||pingers.match||'%'
+                '''.format(in_text)).fetchall() for i in i ])
+            if 'EVERYONE GET IN HERE' in out_text:
+                pingers_check = db.execute('''
+                    SELECT EXISTS(SELECT 1 FROM ping_exclude WHERE "{0}" LIKE '%'||ping_exclude.match||'%') LIMIT 1
+                    '''.format(in_text)).fetchone()
+                if 1 in pingers_check:
+                    out_text = " ".join([ i for i in db.execute('''
+                    SELECT DISTINCT username FROM pingers WHERE "{0} {1}" NOT LIKE '%'||username||'%'
+                    '''.format(update.message.from_user.username, out_text)).fetchall() for i in i ])
+                else:
+                    out_text = " ".join([ i for i in db.execute('''
+                    SELECT DISTINCT username FROM pingers WHERE pingers.username NOT LIKE "EVERYONE GET IN HERE" AND pingers.username NOT LIKE "{0}"
+                    '''.format(update.message.from_user.username)).fetchall() for i in i ])
 
-    conn.commit()
-    db.close()
-    conn.close()
+        conn.commit()
+        db.close()
+        conn.close()
 
-    if out_text:
-        out_text = " ".join([ "@"+i for i in out_text.split(' ') ])
-        bot.send_message( chat_id = update.message.chat_id, text = out_text )
-        log_dict = {'timestamp': log_timestamp(), 
-                      'pingers': out_text, 
-                     'username': update.message.from_user.username }
-        print("{timestamp}: ping {pingers} by @{username}".format(**log_dict))
+        if out_text:
+            out_text = " ".join([ "@"+i for i in out_text.split(' ') ])
+            bot.send_message( chat_id = update.message.chat_id, text = out_text )
+            log_dict = {'timestamp': log_timestamp(), 
+                          'pingers': out_text, 
+                         'username': update.message.from_user.username }
+            print("{timestamp}: ping {pingers} by @{username}".format(**log_dict))
+    except:
+        return
 
 #==== End of parser function ================================================
 
