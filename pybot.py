@@ -345,7 +345,7 @@ def parser(bot, update):
         '''.format(in_text)).fetchone()
 
         if 1 in a_db_check:
-            out_text = "".join([ i for i in a_db.execute('''
+            out_text = "\n".join([ i for i in a_db.execute('''
                 SELECT string FROM answers WHERE "{0}" LIKE '%'||answers.match||'%' 
                 '''.format(in_text)).fetchall() for i in i ])
 
