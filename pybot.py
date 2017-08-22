@@ -295,7 +295,7 @@ def parser(bot, update):
 
     in_text = update.message.text.lower().replace('ё','е')
     conn = sqlite3.connect(DATABASE)
-    
+   
     try:
         db = conn.cursor()
         out_text = ""
@@ -336,24 +336,24 @@ def parser(bot, update):
         return
 
     try:
-        db = conn.cursor()
+        a_conn = sqlite3.connect(DATABASE)
+        a_db = a_conn.cursor()
         out_text = ""
 
-        db_check = db.execute('''
+        a_db_check = a_db.execute('''
         SELECT EXISTS(SELECT 1 FROM answers WHERE "{0}" LIKE '%'||answers.match||'%') LIMIT 1
         '''.format(in_text)).fetchone()
 
-        if 1 in db_check:
-            out_text = "".join([ i for i in db.execute('''
-                SELECT string FROM answers WHERE "in_text" LIKE '%'||answers.match||'%' 
-                ''').fetchall() for i in i ])
+        if 1 in a_db_check:
+            out_text = "".join([ i for i in a_db.execute('''
+                SELECT string FROM answers WHERE "{0}" LIKE '%'||answers.match||'%' 
+                '''.format(in_text)).fetchall() for i in i ])
 
-        conn.commit()
-        db.close()
-        conn.close()
+        a_conn.commit()
+        a_db.close()
+        a_conn.close()
 
         if out_text:
-            out_text = " ".join([ "@"+i for i in out_text.split(' ') ])
             bot.send_message( chat_id = update.message.chat_id, text = out_text )
             log_dict = {'timestamp': log_timestamp(), 
                          'username': update.message.from_user.username }
