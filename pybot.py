@@ -311,19 +311,19 @@ def parser(bot, update):
             g_in_text = in_text.replace(",","").replace(".","")
             g_db_check = g_db.execute('''
             SELECT EXISTS(SELECT 1 FROM google WHERE "{0}" LIKE '%'||google.match||'%') LIMIT 1
-            '''.format(in_text)).fetchone()
+            '''.format(g_in_text)).fetchone()
             if 1 in g_db_check:
                 matches = [ i for i in g_db.execute('''
                     SELECT * FROM google WHERE "{0}" LIKE '%'||google.match||'%' 
-                    '''.format(in_text)).fetchall() for i in i ]
+                    '''.format(g_in_text)).fetchall() for i in i ]
 
                 g_conn.commit()
                 g_db.close()
                 g_conn.close()
 
-                in_text = in_text.replace(sorted(matches, key=len)[-1],"")
+                g_in_text = g_in_text.replace(sorted(matches, key=len)[-1],"")
                 
-                out_text = 'https://www.google.ru/search?q={0}'.format(in_text.strip().replace(" ","+"))
+                out_text = 'https://www.google.ru/search?q={0}'.format(g_in_text.strip().replace(" ","+"))
 
                 if out_text:
                     bot.send_message( chat_id = update.message.chat_id, disable_web_page_preview = 1, text = out_text )
