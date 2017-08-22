@@ -367,7 +367,7 @@ def manage(bot, update, args):
 
 def create_table():
 
-    db_check_file = open(DATABASE, 'w')
+    db_check_file = open(DATABASE, 'w+')
     db_check_file.close()
 
     conn = sqlite3.connect(DATABASE)
