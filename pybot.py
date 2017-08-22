@@ -295,10 +295,10 @@ def parser(bot, update):
 
     in_text = update.message.text.lower().replace('ё','е')
     conn = sqlite3.connect(DATABASE)
-    db = conn.cursor()
-    out_text = ""
     
     try:
+        db = conn.cursor()
+        out_text = ""
         db_check = db.execute('''
         SELECT EXISTS(SELECT 1 FROM ping_phrases WHERE "{0}" LIKE '%'||ping_phrases.phrase||'%') LIMIT 1
         '''.format(in_text)).fetchone()
@@ -320,6 +320,7 @@ def parser(bot, update):
                     SELECT DISTINCT username FROM pingers WHERE pingers.username NOT LIKE "EVERYONE GET IN HERE" AND pingers.username NOT LIKE "{0}"
                     '''.format(update.message.from_user.username)).fetchall() for i in i ])
 
+
         conn.commit()
         db.close()
         conn.close()
@@ -333,6 +334,30 @@ def parser(bot, update):
             print("{timestamp}: ping {pingers} by @{username}".format(**log_dict))
     except:
         return
+
+    try:
+        db = conn.cursor()
+        out_text = ""
+
+        db_check = db.execute('''
+        SELECT EXISTS(SELECT 1 FROM answers WHERE "{0}" LIKE '%'||answers.match||'%') LIMIT 1
+        '''.format(in_text)).fetchone()
+
+        if 1 in db_check:
+            out_text = "".join([ i for i in db.execute('''
+                SELECT string FROM answers WHERE "in_text" LIKE '%'||answers.match||'%' 
+                ''').fetchall() for i in i ])
+
+        conn.commit()
+        db.close()
+        conn.close()
+
+        if out_text:
+            out_text = " ".join([ "@"+i for i in out_text.split(' ') ])
+            bot.send_message( chat_id = update.message.chat_id, text = out_text )
+            log_dict = {'timestamp': log_timestamp(), 
+                         'username': update.message.from_user.username }
+            print("{timestamp}: Answer by @{username}".format(**log_dict))
 
 #==== End of parser function ================================================
 
