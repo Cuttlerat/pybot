@@ -393,7 +393,7 @@ def parser(bot, update):
 
         in_text = in_text.replace(sorted(matches, key=len)[-1],"")
         
-        out_text = 'https://www.google.ru/search?q={0}'.format(in_text.strip())
+        out_text = 'https://www.google.ru/search?q={0}'.format(in_text.strip().replace(" ","+"))
 
         if out_text:
             bot.send_message( chat_id = update.message.chat_id, disable_web_page_preview = 1, text = out_text )
