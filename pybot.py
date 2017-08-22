@@ -327,7 +327,7 @@ def parser(bot, update):
         out_text = " ".join([ "@"+i for i in out_text.split(' ') ])
         bot.send_message( chat_id = update.message.chat_id, text = out_text )
         log_dict = {'timestamp': log_timestamp(), 
-                      'pingers': pingers, 
+                      'pingers': out_text, 
                      'username': update.message.from_user.username }
         print("{timestamp}: ping {pingers} by @{username}".format(**log_dict))
 
@@ -367,8 +367,8 @@ def manage(bot, update, args):
 
 def create_table():
 
-    #db_check_file = open(DATABASE, 'w')
-    #db_check_file.close()
+    db_check_file = open(DATABASE, 'w')
+    db_check_file.close()
 
     conn = sqlite3.connect(DATABASE)
     db = conn.cursor()
