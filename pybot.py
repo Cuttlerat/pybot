@@ -345,16 +345,16 @@ def parser(bot, update):
         '''.format(in_text)).fetchone()
 
         if 1 in a_db_check:
-            out_text = "\n".join([ i for i in a_db.execute('''
+            out_text = [ i for i in a_db.execute('''
                 SELECT string FROM answers WHERE "{0}" LIKE '%'||answers.match||'%' 
-                '''.format(in_text)).fetchall() for i in i ])
+                '''.format(in_text)).fetchall() for i in i ]
 
         a_conn.commit()
         a_db.close()
         a_conn.close()
 
-        if out_text:
-            bot.send_message( chat_id = update.message.chat_id, text = out_text )
+        for message in out_text:
+            bot.send_message( chat_id = update.message.chat_id, text = message )
             log_dict = {'timestamp': log_timestamp(), 
                          'username': update.message.from_user.username }
             print("{timestamp}: Answer by @{username}".format(**log_dict))
