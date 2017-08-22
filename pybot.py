@@ -358,6 +358,8 @@ def parser(bot, update):
             log_dict = {'timestamp': log_timestamp(), 
                          'username': update.message.from_user.username }
             print("{timestamp}: Answer by @{username}".format(**log_dict))
+    except:
+        return
 
 #==== End of parser function ================================================
 
