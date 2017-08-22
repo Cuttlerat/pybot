@@ -143,6 +143,7 @@ def weather(bot, update, args):
 
     try:
         now_temp  = w_response["data"]["current_condition"][0]["temp_C"]
+        if now_temp[0] != '-': now_temp = '+' + now_temp
     except KeyError:
         error_message='Wrong location!'
 
@@ -153,8 +154,8 @@ def weather(bot, update, args):
                 'error_message': "Wrong location", 
                      'username': update.message.from_user.username }
         print("{timestamp}: \"{error_message}\" by @{username}".format(**log_dict))
+        return
 
-    if now_temp[0] != '-': now_temp = '+' + now_temp
 
     now_comment = w_response["data"]["current_condition"][0]["lang_ru"][0]["value"]
 
@@ -295,7 +296,7 @@ def parser(bot, update):
 
     in_text = update.message.text.lower().replace('ё','е')
     conn = sqlite3.connect(DATABASE)
-   
+    # ------------ Ping ----------------- 
     try:
         db = conn.cursor()
         out_text = ""
@@ -333,8 +334,11 @@ def parser(bot, update):
                          'username': update.message.from_user.username }
             print("{timestamp}: ping {pingers} by @{username}".format(**log_dict))
     except:
+        conn.commit()
+        db.close()
+        conn.close()
         return
-
+    # ------------ Answer ----------------- 
     try:
         a_conn = sqlite3.connect(DATABASE)
         a_db = a_conn.cursor()
@@ -359,6 +363,48 @@ def parser(bot, update):
                          'username': update.message.from_user.username }
             print("{timestamp}: Answer by @{username}".format(**log_dict))
     except:
+        a_conn.commit()
+        a_db.close()
+        a_conn.close()
+        return
+
+    # ------------ Google ----------------- 
+    try:
+        g_conn = sqlite3.connect(DATABASE)
+        g_db = g_conn.cursor()
+        out_text = ""
+
+        gi_db_check = g_db.execute('''
+        SELECT EXISTS(SELECT 1 FROM google_ignore WHERE "{0}" LIKE '%'||google_ignore.ignore||'%') LIMIT 1
+        '''.format(in_text)).fetchone()
+
+        if 0 in gi_db_check:
+            g_db_check = g_db.execute('''
+            SELECT EXISTS(SELECT 1 FROM google WHERE "{0}" LIKE '%'||google.match||'%') LIMIT 1
+            '''.format(in_text)).fetchone()
+            if 1 in g_db_check:
+                matches = [ i for i in g_db.execute('''
+                    SELECT * FROM google WHERE "{0}" LIKE '%'||google.match||'%' 
+                    '''.format(in_text)).fetchall() for i in i ]
+
+        g_conn.commit()
+        g_db.close()
+        g_conn.close()
+
+        in_text = in_text.replace(sorted(matches, key=len)[-1],"")
+        
+        out_text = 'https://www.google.ru/search?q={0}'.format(in_text.strip())
+
+        if out_text:
+            bot.send_message( chat_id = update.message.chat_id, disable_web_page_preview = 1, text = out_text )
+            log_dict = {'timestamp': log_timestamp(), 
+                           'google': in_text.strip(),
+                         'username': update.message.from_user.username }
+            print('{timestamp}: Google "{google}" by @{username}'.format(**log_dict))
+    except:
+        g_conn.commit()
+        g_db.close()
+        g_conn.close()
         return
 
 #==== End of parser function ================================================
