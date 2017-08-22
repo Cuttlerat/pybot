@@ -3,12 +3,15 @@ import json
 import requests
 import pytz 
 import sqlite3
+import logging
 
 from bs4 import BeautifulSoup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from datetime import datetime
 from dateutil.tz import tzlocal
 from tokens import *
+
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 #===========FUNCTIONS========================================================
 
@@ -105,13 +108,35 @@ def weather(bot, update, args):
                      'fx24': 'yes', 
                      'lang': 'ru'            }
 
-    w_response = requests.get('https://api.worldweatheronline.com/premium/v1/weather.ashx', w_params).json()
+    weather_api_bug = False
 
-    now_temp  = w_response["data"]["current_condition"][0]["temp_C"]
+    now_city = ""
+    while not now_city or now_city == "null":
+
+        w_response = requests.get('https://api.worldweatheronline.com/premium/v1/weather.ashx', w_params).json()
+        try:
+            now_city  = w_response["data"]["request"][0]["query"]
+        except KeyError:
+            now_city = ""
+        if not (now_city or now_city == "null") and weather_api_bug: break
+        if not (now_city or now_city == "null"): weather_api_bug = True
+
+    try:
+        now_temp  = w_response["data"]["current_condition"][0]["temp_C"]
+    except KeyError:
+        error_message='Wrong location!'
+
+        bot.send_message(chat_id=update.message.chat_id, text = error_message )
+
+        # LOG
+        log_dict = {'timestamp': log_timestamp(), 
+                'error_message': "Wrong location", 
+                     'username': update.message.from_user.username }
+        print("{timestamp}: \"{error_message}\" by @{username}".format(**log_dict))
+
     if now_temp[0] != '-': now_temp = '+' + now_temp
 
     now_comment = w_response["data"]["current_condition"][0]["lang_ru"][0]["value"]
-    now_city  = w_response["data"]["request"][0]["query"]
 
     now_time  = datetime.strptime(w_response["data"]["current_condition"][0]["observation_time"] + " 2017", '%I:%M %p %Y')
     now_time  = pytz.timezone('Europe/Moscow').fromutc(now_time)
@@ -175,6 +200,7 @@ def wset(bot, update, args):
             DELETE FROM locations WHERE "{0}" LIKE locations.username
             '''.format(update.message.from_user.username))
             out_text = "Deleted information about @{0}".format(update.message.from_user.username)
+            city = 'deleted'
         else:
             db.execute('''
             UPDATE locations SET city="{1}" WHERE username="{0}"
@@ -183,7 +209,7 @@ def wset(bot, update, args):
     else:
         if not city or "delete" in city:
             out_text = "No informaton about @{0}".format(update.message.from_user.username)
-
+            city = 'none'
         else:
             db.execute('''
             INSERT INTO locations(username,city) VALUES("{0}","{1}")
@@ -282,17 +308,20 @@ def parser(bot, update):
                      'username': update.message.from_user.username }
         print("{timestamp}: ping {pingers} by @{username}".format(**log_dict))
 
+#==== End of parser function ================================================
 
 def log_timestamp():
     return(datetime.now(tzlocal()).strftime("[%d/%b/%Y:%H:%M:%S %z]"))
 
 #============================================================================
 
+print('{}: Started'.format(log_timestamp()))
 
 updater    = Updater(token=BOT_TOKEN)
 dispatcher = updater.dispatcher
 
 dispatcher.add_handler(CommandHandler('start', start))
+dispatcher.add_handler(CommandHandler('info', start))
 dispatcher.add_handler(CommandHandler('weather', weather, pass_args=True))
 dispatcher.add_handler(CommandHandler('w', weather, pass_args=True))
 dispatcher.add_handler(CommandHandler('wset', wset, pass_args=True))
