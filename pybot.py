@@ -328,7 +328,7 @@ def parser(bot, update):
                 if out_text:
                     bot.send_message( chat_id = update.message.chat_id, disable_web_page_preview = 1, text = out_text )
                     log_dict = {'timestamp': log_timestamp(), 
-                                   'google': in_text.strip(),
+                                   'google': g_in_text.strip(),
                                  'username': update.message.from_user.username }
                     print('{timestamp}: Google "{google}" by @{username}'.format(**log_dict))
                     return
