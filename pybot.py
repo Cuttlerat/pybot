@@ -308,6 +308,7 @@ def parser(bot, update):
         '''.format(in_text)).fetchone()
 
         if 0 in gi_db_check:
+            g_in_text = in_text.replace(",","").replace(".","")
             g_db_check = g_db.execute('''
             SELECT EXISTS(SELECT 1 FROM google WHERE "{0}" LIKE '%'||google.match||'%') LIMIT 1
             '''.format(in_text)).fetchone()
