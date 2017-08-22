@@ -82,23 +82,43 @@ def get_emoji(emoji_code):
 
 def weather(bot, update, args):
 
-    conn = sqlite3.connect('data/pybot.db')
+    conn = sqlite3.connect(DATABASE)
     db = conn.cursor()
 
-    db_check = db.execute('''
-    SELECT EXISTS(SELECT 1 FROM locations WHERE "{0}" LIKE locations.username) LIMIT 1
-    '''.format(update.message.from_user.username)).fetchone()
+    try:
+        db_check = db.execute('''
+        SELECT EXISTS(SELECT 1 FROM locations WHERE "{0}" LIKE locations.username) LIMIT 1
+        '''.format(update.message.from_user.username)).fetchone()
+        if 1 in db_check and not args:
+            city = ''.join(db.execute('''
+            SELECT city FROM locations WHERE "{0}" LIKE locations.username
+            '''.format(update.message.from_user.username)).fetchone())
+        else:
+            city = ' '.join(args) if args else ''.join(db.execute('''
+                                                SELECT city FROM locations WHERE username="default_city"
+                                                ''').fetchone())
+    except:
+        if update.message.from_user.username in ADMINS:
+            error_message = '''You didn't set the default city
+                               You can add default city by this command:
+                               `/manage insert into locations(username,city) values(\"default_city\",\"YOUR CITY HERE\")`'''
+            error_message = "\n".join([ i.strip() for i in error_message.split('\n') ])
+        else:
+            error_message = "Administrator didn't set the default city\nTry /w City"
+        bot.send_message(chat_id=update.message.chat_id, parse_mode = 'markdown', text = error_message )
 
-    if 1 in db_check:
-        city = ''.join(db.execute('''
-        SELECT city FROM locations WHERE "{0}" LIKE locations.username
-        '''.format(update.message.from_user.username)).fetchone())
-    else:
-        city = ' '.join(args) if args else ''.join(db.execute('''
-                                            SELECT city FROM locations WHERE username="default_city"
-                                            ''').fetchone())
+        # LOG
+        log_dict = {'timestamp': log_timestamp(), 
+                'error_message': "Wrong location", 
+                     'username': update.message.from_user.username }
+        print("{timestamp}: \"{error_message}\" by @{username}".format(**log_dict))
+        conn.commit()
+        db.close()
+        conn.close()
+        return
 
     conn.commit()
+    db.close()
     conn.close()
 
     w_params = {        'q': city, 
@@ -187,7 +207,7 @@ def weather(bot, update, args):
 def wset(bot, update, args):
 
     city = "".join(args)
-    conn = sqlite3.connect('data/pybot.db')
+    conn = sqlite3.connect(DATABASE)
     db = conn.cursor()
 
     db_check = db.execute('''
@@ -212,11 +232,12 @@ def wset(bot, update, args):
             city = 'none'
         else:
             db.execute('''
-            INSERT INTO locations(username,city) VALUES("{0}","{1}")
+            INSERT INTO locations(username, city) VALUES("{0}","{1}")
             '''.format(update.message.from_user.username,city))
             out_text = "Added @{0}: {1}".format(update.message.from_user.username,city)
 
     conn.commit()
+    db.close()
     conn.close()
 
     bot.send_message( chat_id = update.message.chat_id, text = out_text )
@@ -273,9 +294,10 @@ def loglist(bot, update, args):
 def parser(bot, update):
 
     in_text = update.message.text.lower().replace('ё','е')
-    conn = sqlite3.connect('data/pybot.db')
+    conn = sqlite3.connect(DATABASE)
     db = conn.cursor()
-
+    out_text = ""
+    
     db_check = db.execute('''
     SELECT EXISTS(SELECT 1 FROM ping_phrases WHERE "{0}" LIKE '%'||ping_phrases.phrase||'%') LIMIT 1
     '''.format(in_text)).fetchone()
@@ -298,6 +320,7 @@ def parser(bot, update):
                 '''.format(update.message.from_user.username)).fetchall() for i in i ])
 
     conn.commit()
+    db.close()
     conn.close()
 
     if out_text:
@@ -310,12 +333,74 @@ def parser(bot, update):
 
 #==== End of parser function ================================================
 
+def manage(bot, update, args):
+
+    if not update.message.from_user.username in ADMINS:
+        out_text = "You are not an administrator. The incident will be reported"
+        commans = "not an administrator"
+    else:
+        command = " ".join(args)
+
+        if command == ".schema": command = "SELECT sql FROM sqlite_master WHERE type = 'table'"
+        if command == ".tables": command = "SELECT name FROM sqlite_master WHERE type = 'table'"
+
+        conn = sqlite3.connect(DATABASE)
+        db = conn.cursor()
+
+        try:
+            out_text = "\n".join([ " - ".join(i) for i in db.execute(command).fetchall()])
+        except (sqlite3.OperationalError, sqlite3.IntegrityError):
+            out_text = command = "Bad command"
+
+    if out_text:
+        bot.send_message( chat_id = update.message.chat_id, text = out_text )
+        log_dict = {'timestamp': log_timestamp(), 
+                      'command': command, 
+                     'username': update.message.from_user.username }
+        print('{timestamp}: Manage "{command}" by @{username}'.format(**log_dict))
+
+    conn.commit()
+    db.close()
+    conn.close()
+
+#==== End of manage function ================================================
+
+def create_table():
+
+    #db_check_file = open(DATABASE, 'w')
+    #db_check_file.close()
+
+    conn = sqlite3.connect(DATABASE)
+    db = conn.cursor()
+
+    tables = [
+        "CREATE TABLE pingers(username varchar(255), match varchar(255) PRIMARY KEY)",
+        "CREATE TABLE ping_phrases(phrase varchar(255) PRIMARY KEY)",
+        "CREATE TABLE google_ignore(ignore varchar(255) PRIMARY KEY)",
+        "CREATE TABLE google(match varchar(255) PRIMARY KEY)",
+        "CREATE TABLE locations(username varchar(255) PRIMARY KEY, city varchar(255))",
+        "CREATE TABLE answers(match varchar(255) PRIMARY KEY, string varchar(255))",
+        "CREATE TABLE ping_exclude(match varchar(255) PRIMARY KEY)"
+        ]
+
+    for command in tables:
+        try: 
+            db.execute(command)
+        except sqlite3.OperationalError:
+            pass
+
+    conn.commit()
+    db.close()
+    conn.close()
+
 def log_timestamp():
     return(datetime.now(tzlocal()).strftime("[%d/%b/%Y:%H:%M:%S %z]"))
 
 #============================================================================
 
 print('{}: Started'.format(log_timestamp()))
+
+create_table()
 
 updater    = Updater(token=BOT_TOKEN)
 dispatcher = updater.dispatcher
@@ -327,6 +412,7 @@ dispatcher.add_handler(CommandHandler('w', weather, pass_args=True))
 dispatcher.add_handler(CommandHandler('wset', wset, pass_args=True))
 dispatcher.add_handler(CommandHandler('ibash', ibash, pass_args=True))
 dispatcher.add_handler(CommandHandler('loglist', loglist, pass_args=True))
+dispatcher.add_handler(CommandHandler('manage', manage, pass_args=True))
 dispatcher.add_handler(MessageHandler(Filters.text, parser))
 
 updater.start_polling()
