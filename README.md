@@ -16,13 +16,13 @@ This is my first telegram bot written in Python
 
 ## Starting
 
-```
+```bash
 git clone https://github.com/Cuttlerat/pybot.git
 cd pybot
 ```
 
 Add your telegram username, tokens, and database path into `./tokens.py` file
-```
+```python
 BOT_TOKEN = '<YOUR TOKEN>'
 WEATHER_TOKEN = '<YOUR TOKEN>'
 DATABASE = 'data/pybot.db'
@@ -31,7 +31,7 @@ ADMINS = [ 'YOUR TELEGRAM USERNAME WITHOUT @' ]
 
 Then just launch the bot
 
-```
+```bash
 ./pybot.py
 ```
 
@@ -39,7 +39,7 @@ Then just launch the bot
 
 In order to build and create a docker container, `docker-compose` must be installed in your system
 
-```
+```bash
 docker-compose up --build pybot 
 ```
 
@@ -60,7 +60,7 @@ Cuttlebot: https://www.google.ru/search?q=Jenkins
 
 You will need to add a note in your database like this:
 
-```
+```sql
 /manage INSERT INTO google(match) VALUES("what is")
 ```
 
@@ -68,7 +68,7 @@ All matches must be in a low case! It's important (I will do something with it l
 
 If you don't want any word to trigger this function
 
-```
+```sql
 /manage INSERT INTO google_ignore(ignore) VALUES("Jenkins")
 Cuttlerat: What is Jenkins?
 *no answer*
@@ -78,7 +78,7 @@ Cuttlerat: What is Jenkins?
 
 If you want a simple trigger on a message responding with your specified string
 
-```
+```sql
 /manage INSERT INTO answers(match,string) VALUES("hello!", "Hi!")
 Cuttlerat: Hello!
 Cutltebot: Hi!
@@ -88,7 +88,7 @@ Cutltebot: Hi!
 
 If you want to summon someone with just mentioning of his name or nickname
 
-```
+```sql
 /manage INSERT INTO pingers(username,match) VALUES("Cuttlerat", "rat")
 Cuttlerat: rat!
 *nothing*
@@ -96,7 +96,7 @@ Cuttlerat: rat!
 
 Why? Because we didn't set a ping phrase yet
 
-```
+```sql
 /manage INSERT INTO ping_phrases(phrase) VALUES("ping")
 Cuttlerat: ping rat
 Cuttlebot: @Cuttlerat
@@ -104,7 +104,7 @@ Cuttlebot: @Cuttlerat
 
 There is a little trick to summon all persons from the pingers table
 
-```
+```sql
 /manage INSERT INTO pingers(username,match) VALUES("hotkosc", "kosc")
 /manage INSERT INTO pingers(username,match) VALUES("EVERYONE GET IN HERE", "all")
 Cuttlerat: ping all
@@ -115,7 +115,7 @@ But what if you want to call everyone except one guy?
 
 You will need to add a ping exclude phrase
 
-```
+```sql
 /manage INSERT INTO ping_exclude(match) VALUES("excpet")
 Cuttlerat: ping all except kosc
 Cuttlebot: @Cuttlerat
