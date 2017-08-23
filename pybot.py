@@ -29,54 +29,20 @@ def start(bot, update):
 
 def get_emoji(emoji_code):
 
-    emoji_code = str(emoji_code)
+    emojis = {
+        '☀️':  [113],         # Sunny
+        '⛅️': [116],         # Partly cloudy
+        '🌥': [119],         # Cloudy
+        '☁️':  [122],         # Overcast
+        '🌩': [200],         # Thunder
+        '🌫': [143,248,260], # Fog
+        '🌦': [176,263,266,281,293,296,299,302,311,317,353,362],                 # Light Rain
+        '🌨': [179,182,185,227,230,323,326,329,332,335,338,350,368,371,374,377], # Snow
+        '🌧': [284,305,308,314,320,356,359,365],                                 # Heavy rain
+        '⛈':  [386,389,392,395]                                                  # Rain with thunder
+        }
 
-    # Sunny
-    if "113" in emoji_code:
-        emoji_code = emoji_code.replace("113","☀️")
-
-    # Partly cloudy
-    if "116" in emoji_code:
-        emoji_code = emoji_code.replace("116","🌥")
-
-    # Cloudy
-    if "119" in emoji_code:
-        emoji_code = emoji_code.replace("119","🌥")
-
-    # Overcast
-    if "122" in emoji_code:
-        emoji_code = emoji_code.replace("122","☁️")
-
-    # Thunder
-    if "200" in emoji_code:
-        emoji_code = emoji_code.replace("200","🌩")
-
-    # Fog
-    for i in ["143","248","260"]:
-        if i in emoji_code:
-            emoji_code = emoji_code.replace(i,"🌫")
-
-    # Light Rain
-    for i in ["176","263","266","281","293","296","299","302","311","317","362"]:
-        if i in emoji_code:
-            emoji_code = emoji_code.replace(i,"🌧")
-
-    # Show
-    for i in ["179","182","185","227","230","323","326","329","332","335","338","350","353","368","371","374","377"]:
-        if i in emoji_code:
-            emoji_code = emoji_code.replace(i,"🌨")
-
-    # Heavy rain
-    for i in ["284","305","308","314","320","356","359","365"]:
-        if i in emoji_code:
-            emoji_code = emoji_code.replace(i,"🌧")
-
-    # Rain with thunder
-    for i in ["386","389","392","395"]:
-        if i in emoji_code:
-            emoji_code = emoji_code.replace(i,"⛈")
-
-    return(emoji_code)
+    return("".join([i for i in emojis if emoji_code in [x for x in emojis[i]]]))
 
 #==== End of get_emoji function =============================================
 
@@ -162,14 +128,14 @@ def weather(bot, update, args):
     now_time  = datetime.strptime(w_response["data"]["current_condition"][0]["observation_time"] + " 2017", '%I:%M %p %Y')
     now_time  = pytz.timezone('Europe/Moscow').fromutc(now_time)
     now_time  = "{:%H:%M}".format(now_time)
-    now_emoji = get_emoji(w_response["data"]["current_condition"][0]["weatherCode"])
+    now_emoji = get_emoji(int(w_response["data"]["current_condition"][0]["weatherCode"]))
 
     weather = {}
     for j in range(2):
         for i in range(3):
             weather[j,"temp",i]    = w_response["data"]["weather"][j]["hourly"][2+(i*3)]["tempC"]
             if weather[j,"temp",i][0] != '-': weather[j,"temp",i] = '+' + weather[j,"temp",i]
-            weather[j,"emoji",i]   = get_emoji(w_response["data"]["weather"][j]["hourly"][2+(i*3)]["weatherCode"])
+            weather[j,"emoji",i]   = get_emoji(int(w_response["data"]["weather"][j]["hourly"][2+(i*3)]["weatherCode"]))
             weather[j,"comment",i] = w_response["data"]["weather"][j]["hourly"][2+(i*3)]["lang_ru"][0]["value"]
     
     message = ''.join("""
