@@ -1,0 +1,19 @@
+version: "3"
+services:
+
+    pybot:
+        build: 
+            context: .
+            dockerfile: dockerfiles/pybot.Dockerfile
+        volumes:
+          - ./data:/pybot/data
+        restart: unless-stopped
+
+    builder:
+        build:
+            context: .
+            dockerfile: dockerfiles/builder.Dockerfile
+        volumes:
+          - .:/pybot
+          - /var/run/docker.sock:/var/run/docker.sock
+        restart: unless-stopped
