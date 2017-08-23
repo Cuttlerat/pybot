@@ -138,8 +138,8 @@ def weather(bot, update, args):
             now_city  = w_response["data"]["request"][0]["query"]
         except KeyError:
             now_city = ""
-        if not (now_city or now_city == "null") and weather_api_bug: break
-        if not (now_city or now_city == "null"): weather_api_bug = True
+        if (not now_city or now_city == "null") and weather_api_bug: break
+        if (not now_city or now_city == "null"): weather_api_bug = True
 
     try:
         now_temp  = w_response["data"]["current_condition"][0]["temp_C"]
