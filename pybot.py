@@ -333,7 +333,7 @@ def parser(bot, update):
                 else:
                     out_text = " ".join([ i for i in db.execute('''
                     SELECT DISTINCT username FROM pingers WHERE pingers.username 
-                    NOT LIKE "EVERYONE GET IN HERE" AND pingers.username NOT LIKE "{0}" AND "{1}" == chat_id
+                    NOT LIKE "EVERYONE GET IN HERE" AND pingers.username NOT LIKE "{0}" AND ("{1}" == chat_id OR chat_id == "all")
                     '''.format(update.message.from_user.username, chat_id)).fetchall() for i in i ])
 
         conn.commit()
