@@ -325,7 +325,7 @@ def parser(bot, update):
             if 'EVERYONE GET IN HERE' in out_text:
                 pingers_check = db.execute('''
                     SELECT EXISTS(SELECT 1 FROM ping_exclude WHERE "{0}" LIKE '%'||ping_exclude.match||'%') LIMIT 1
-                    '''.format(in_text).fetchone()
+                    '''.format(in_text)).fetchone()
                 if 1 in pingers_check:
                     out_text = " ".join([ i for i in db.execute('''
                     SELECT DISTINCT username FROM pingers WHERE "{0} {1}" NOT LIKE '%'||username||'%' AND ("{2}" == chat_id OR chat_id == "all")
@@ -400,8 +400,6 @@ def manage(bot, update, args):
         conn = sqlite3.connect(DATABASE)
         db = conn.cursor()
 
-        print(command)
-        
         try:
             out_text = "\n".join([" | ".join([str(i) for i in i]) for i in db.execute(command).fetchall()])
         except (sqlite3.OperationalError, sqlite3.IntegrityError):
