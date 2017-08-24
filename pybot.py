@@ -420,27 +420,34 @@ def manage(bot, update, args):
 
 def pinger(bot,update,args):
 
-    chat_id = update.message.chat_id
-    command = " ".join(args).split(' ')
-    username = command[0]
-    match = " ".join(command[1:])
+    if update.message.username in ADMINS:
+        chat_id = update.message.chat_id
+        command = " ".join(args).split(' ')
+        username = command[0]
+        match = " ".join(command[1:])
 
-    conn = sqlite3.connect(DATABASE)
-    db = conn.cursor()
+        conn = sqlite3.connect(DATABASE)
+        db = conn.cursor()
 
-    try:
-        db.execute('INSERT INTO pingers(username,match,chat_id) values("{0}","{1}","{2}")'.format(username,match,chat_id))
-        bot.send_message( chat_id = update.message.chat_id, text = "Successfuly added" )
+        try:
+            db.execute('INSERT INTO pingers(username,match,chat_id) values("{0}","{1}","{2}")'.format(username,match,chat_id))
+            bot.send_message( chat_id = update.message.chat_id, text = "Successfuly added" )
+            log_dict = {'timestamp': log_timestamp(), 
+                          'command': " ".join(command), 
+                         'username': update.message.from_user.username }
+            print('{timestamp}: Added pinger "{command}" by @{username}'.format(**log_dict))
+        except:
+            bot.send_message( chat_id = update.message.chat_id, text = "There was some trouble" )
+            log_dict = {'timestamp': log_timestamp(), 
+                          'command': " ".join(command), 
+                         'username': update.message.from_user.username }
+            print('{timestamp}: Error while add pinger "{command}" by @{username}'.format(**log_dict))
+    else:
+        bot.send_message( chat_id = update.message.chat_id, text = "You are not an administrator" )
         log_dict = {'timestamp': log_timestamp(), 
                       'command': " ".join(command), 
                      'username': update.message.from_user.username }
-        print('{timestamp}: Added pinger "{command}" by @{username}'.format(**log_dict))
-    except:
-        bot.send_message( chat_id = update.message.chat_id, text = "There was some trouble" )
-        log_dict = {'timestamp': log_timestamp(), 
-                      'command': " ".join(command), 
-                     'username': update.message.from_user.username }
-        print('{timestamp}: Error while add pinger "{command}" by @{username}'.format(**log_dict))
+        print('{timestamp}: Trying to pinger "{command}" by @{username}'.format(**log_dict))
 
 
     conn.commit()
