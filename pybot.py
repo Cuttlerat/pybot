@@ -395,7 +395,7 @@ def manage(bot, update, args):
 
         if command == ".schema": command = "SELECT sql FROM sqlite_master WHERE type = 'table'"
         if command == ".tables": command = "SELECT name FROM sqlite_master WHERE type = 'table'"
-        if "insert into pingers" in command and "%chat_id%" in command: command = command.replace("%chat_id%", str(update.message.chat_id))
+        if "%%%chat_id%%%" in command: command = command.replace("%chat_id%", str(update.message.chat_id))
 
         conn = sqlite3.connect(DATABASE)
         db = conn.cursor()
@@ -417,6 +417,37 @@ def manage(bot, update, args):
     conn.close()
 
 #==== End of manage function ================================================
+
+def pinger(bot,update,args):
+
+    chat_id = update.message.chat_id
+    command = " ".join(args).split(' ')
+    username = command[0]
+    match = " ".join(command[1:])
+
+    conn = sqlite3.connect(DATABASE)
+    db = conn.cursor()
+
+    try:
+        db.execute('INSERT INTO pingers(username,match,chat_id) values("{0}","{1}","{2}")'.format(username,match,chat_id))
+        bot.send_message( chat_id = update.message.chat_id, text = "Successfuly added" )
+        log_dict = {'timestamp': log_timestamp(), 
+                      'command': " ".join(command), 
+                     'username': update.message.from_user.username }
+        print('{timestamp}: Added pinger "{command}" by @{username}'.format(**log_dict))
+    except:
+        bot.send_message( chat_id = update.message.chat_id, text = "There was some trouble" )
+        log_dict = {'timestamp': log_timestamp(), 
+                      'command': " ".join(command), 
+                     'username': update.message.from_user.username }
+        print('{timestamp}: Error while add pinger "{command}" by @{username}'.format(**log_dict))
+
+
+    conn.commit()
+    db.close()
+    conn.close()
+
+#==== End of pinger function ================================================
 
 def create_table():
 
@@ -476,6 +507,7 @@ dispatcher.add_handler(CommandHandler('wset', wset, pass_args=True))
 dispatcher.add_handler(CommandHandler('ibash', ibash, pass_args=True))
 dispatcher.add_handler(CommandHandler('loglist', loglist, pass_args=True))
 dispatcher.add_handler(CommandHandler('manage', manage, pass_args=True))
+dispatcher.add_handler(CommandHandler('pinger', pinger, pass_args=True))
 dispatcher.add_handler(MessageHandler(Filters.text, parser))
 
 updater.start_polling()
