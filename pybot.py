@@ -5,11 +5,16 @@ import pytz
 import sqlite3
 import logging
 import os
+import sys
 import errno
 
 from bs4 import BeautifulSoup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from contextlib import contextmanager
 from datetime import datetime
+from sqlalchemy import *
+from sqlalchemy.ext.automap import automap_base
+from sqlalchemy.orm import Session
 from dateutil.tz import tzlocal
 from tokens import *
 
@@ -397,13 +402,15 @@ def manage(bot, update, args):
         if command == ".tables": command = "SELECT name FROM sqlite_master WHERE type = 'table'"
         if "%%%chat_id%%%" in command: command = command.replace("%chat_id%", str(update.message.chat_id))
 
-        conn = sqlite3.connect(DATABASE)
-        db = conn.cursor()
+        engine = create_engine('sqlite:///{}'.format(DATABASE))
+        conn = engine.connect()
 
         try:
-            out_text = "\n".join([" | ".join([str(i) for i in i]) for i in db.execute(command).fetchall()])
-        except (sqlite3.OperationalError, sqlite3.IntegrityError):
+            out_text = "\n".join([" | ".join([str(i) for i in i]) for i in engine.execute(command).fetchall()])
+            conn.close()
+        except:
             out_text = command = "Bad command"
+            conn.close()
 
     if out_text:
         bot.send_message( chat_id = update.message.chat_id, text = out_text )
@@ -412,9 +419,6 @@ def manage(bot, update, args):
                      'username': update.message.from_user.username }
         print('{timestamp}: Manage "{command}" by @{username}'.format(**log_dict))
 
-    conn.commit()
-    db.close()
-    conn.close()
 
 #==== End of manage function ================================================
 
@@ -426,18 +430,21 @@ def pinger(bot,update,args):
         username = command[0]
         match = " ".join(command[1:])
 
-        conn = sqlite3.connect(DATABASE)
-        db = conn.cursor()
+        engine = create_engine('sqlite:///{}'.format(DATABASE))
+        conn = engine.connect()
+        metadata = MetaData(bind = engine, reflect = True)
+        pingers = metadata.tables['pingers']
 
         try:
-            db.execute('INSERT INTO pingers(username,match,chat_id) values("{0}","{1}","{2}")'.format(username,match,chat_id))
+            conn.execute(pingers.insert().values(
+                username = username,
+                match = match,
+                chat_id = chat_id))
             bot.send_message( chat_id = update.message.chat_id, text = "Successfuly added" )
             log_dict = {'timestamp': log_timestamp(), 
                           'command': " ".join(command), 
                          'username': update.message.from_user.username }
             print('{timestamp}: Added pinger "{command}" by @{username}'.format(**log_dict))
-            conn.commit()
-            db.close()
             conn.close()
         except:
             bot.send_message( chat_id = update.message.chat_id, text = "There was some trouble" )
@@ -445,8 +452,6 @@ def pinger(bot,update,args):
                           'command': " ".join(command), 
                          'username': update.message.from_user.username }
             print('{timestamp}: Error while add pinger "{command}" by @{username}'.format(**log_dict))
-            conn.commit()
-            db.close()
             conn.close()
     else:
         bot.send_message( chat_id = update.message.chat_id, text = "You are not an administrator" )
@@ -454,9 +459,20 @@ def pinger(bot,update,args):
                      'username': update.message.from_user.username }
         print('{timestamp}: Trying to pinger by @{username}'.format(**log_dict))
 
-
-
 #==== End of pinger function ================================================
+
+def test(bot,update,args):
+
+    engine = create_engine('sqlite:///{}'.format(DATABASE))
+    Base = automap_base()
+    Base.prepare(engine, reflect=True)
+    pingers = Base.classes.pingers
+
+    with conn(engine) as ses:
+        res = ses.query(pingers.username)
+        
+    bot.send_message( chat_id = update.message.chat_id, text = "\n".join([i for i in res for i in i]) )
+    
 
 def create_table():
 
@@ -472,32 +488,53 @@ def create_table():
     else:  
         os.fdopen(db_check_file, 'w')
 
-    conn = sqlite3.connect(DATABASE)
-    db = conn.cursor()
+    engine = create_engine('sqlite:///{}'.format(DATABASE))
+    metadata = MetaData(engine)
 
-    tables = [
-        "CREATE TABLE pingers(id integer PRIMARY KEY AUTOINCREMENT, username varchar(255),\
-                              chat_id varchar(255), match varchar(255))",
-        "CREATE TABLE ping_phrases(phrase varchar(255) PRIMARY KEY)",
-        "CREATE TABLE google_ignore(ignore varchar(255) PRIMARY KEY)",
-        "CREATE TABLE google(match varchar(255) PRIMARY KEY)",
-        "CREATE TABLE locations(username varchar(255) PRIMARY KEY, city varchar(255))",
-        "CREATE TABLE answers(match varchar(255) PRIMARY KEY, string varchar(255))",
-        "CREATE TABLE ping_exclude(match varchar(255) PRIMARY KEY)"
-        ]
+    pingers = Table('pingers', metadata,
+            Column('id', Integer, primary_key = True, autoincrement = True),
+            Column('username', Unicode(255)),
+            Column('chat_id', Unicode(255)),
+            Column('match', Unicode(255)))
 
-    for command in tables:
-        try: 
-            db.execute(command)
-        except sqlite3.OperationalError:
-            pass
+    ping_phrases = Table('ping_phrases', metadata,
+            Column('phrase', Unicode(255), primary_key = True))
 
-    conn.commit()
-    db.close()
-    conn.close()
+    google_ignore = Table('google_ignore', metadata,
+            Column('ignore', Unicode(255), primary_key = True))
+
+    google = Table('google', metadata,
+            Column('match', Unicode(255), primary_key = True))
+
+    locations = Table('locations', metadata,
+            Column('username', Unicode(255), primary_key = True),
+            Column('city', Unicode(255)))
+
+    answers = Table('answers', metadata,
+            Column('match', Unicode(255), primary_key = True),
+            Column('string', Unicode(255)))
+
+    ping_exclude = Table('ping_exclude', metadata,
+            Column('match', Unicode(255), primary_key = True))
+
+    metadata.create_all()
 
 def log_timestamp():
     return(datetime.now(tzlocal()).strftime("[%d/%b/%Y:%H:%M:%S %z]"))
+
+@contextmanager
+def conn(engine):
+    session = Session(engine)
+    try:
+        yield session
+        session.commit()
+    except:
+        error = str(sys.exc_info())
+        print("Error is: ", error)
+        session.rollback()
+        raise
+    finally:
+            session.close()
 
 #============================================================================
 
@@ -517,6 +554,7 @@ dispatcher.add_handler(CommandHandler('ibash', ibash, pass_args=True))
 dispatcher.add_handler(CommandHandler('loglist', loglist, pass_args=True))
 dispatcher.add_handler(CommandHandler('manage', manage, pass_args=True))
 dispatcher.add_handler(CommandHandler('pinger', pinger, pass_args=True))
+dispatcher.add_handler(CommandHandler('test', test, pass_args=True))
 dispatcher.add_handler(MessageHandler(Filters.text, parser))
 
 updater.start_polling()
