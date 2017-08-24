@@ -102,7 +102,7 @@ def weather(bot, update, args):
         w_response = requests.get('https://api.worldweatheronline.com/premium/v1/weather.ashx', w_params).json()
         try:
             now_city  = w_response["data"]["request"][0]["query"]
-        except KeyError:
+        except (KeyError, json.decoder.JSONDecodeError):
             now_city = ""
         if (not now_city or now_city == "null") and weather_api_bug: break
         if (not now_city or now_city == "null"): weather_api_bug = True
