@@ -420,7 +420,7 @@ def manage(bot, update, args):
 
 def pinger(bot,update,args):
 
-    if update.message.username in ADMINS:
+    if update.message.from_user.username in ADMINS:
         chat_id = update.message.chat_id
         command = " ".join(args).split(' ')
         username = command[0]
