@@ -4,6 +4,8 @@ import requests
 import pytz 
 import sqlite3
 import logging
+import os
+import errno
 
 from bs4 import BeautifulSoup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
@@ -309,6 +311,7 @@ def parser(bot, update):
 
     # ------------ Ping ----------------- 
     try:
+        chat_id = update.message.chat_id
         db = conn.cursor()
         out_text = ""
         db_check = db.execute('''
@@ -317,21 +320,21 @@ def parser(bot, update):
 
         if 1 in db_check:
             out_text = " ".join([ i for i in db.execute('''
-                SELECT DISTINCT username FROM pingers WHERE "{0}" LIKE '%'||pingers.match||'%'
-                '''.format(in_text)).fetchall() for i in i ])
+                SELECT DISTINCT username FROM pingers WHERE "{0}" LIKE '%'||pingers.match||'%' AND ("{1}" == chat_id OR chat_id == "all")
+                '''.format(in_text, chat_id)).fetchall() for i in i ])
             if 'EVERYONE GET IN HERE' in out_text:
                 pingers_check = db.execute('''
-                    SELECT EXISTS(SELECT 1 FROM ping_exclude WHERE "{0}" LIKE '%'||ping_exclude.match||'%') LIMIT 1
+                    SELECT EXISTS(SELECT 1 FROM ping_exclude WHERE "{0}" LIKE '%'||ping_exclude.match||'%' AND "{1}" == chat_id) LIMIT 1
                     '''.format(in_text)).fetchone()
                 if 1 in pingers_check:
                     out_text = " ".join([ i for i in db.execute('''
-                    SELECT DISTINCT username FROM pingers WHERE "{0} {1}" NOT LIKE '%'||username||'%'
-                    '''.format(update.message.from_user.username, out_text)).fetchall() for i in i ])
+                    SELECT DISTINCT username FROM pingers WHERE "{0} {1}" NOT LIKE '%'||username||'%' AND "{2}" == chat_id 
+                    '''.format(update.message.from_user.username, out_text, chat_id)).fetchall() for i in i ])
                 else:
                     out_text = " ".join([ i for i in db.execute('''
-                    SELECT DISTINCT username FROM pingers WHERE pingers.username NOT LIKE "EVERYONE GET IN HERE" AND pingers.username NOT LIKE "{0}"
-                    '''.format(update.message.from_user.username)).fetchall() for i in i ])
-
+                    SELECT DISTINCT username FROM pingers WHERE pingers.username 
+                    NOT LIKE "EVERYONE GET IN HERE" AND pingers.username NOT LIKE "{0}" AND "{1}" == chat_id
+                    '''.format(update.message.from_user.username, chat_id)).fetchall() for i in i ])
 
         conn.commit()
         db.close()
@@ -392,12 +395,15 @@ def manage(bot, update, args):
 
         if command == ".schema": command = "SELECT sql FROM sqlite_master WHERE type = 'table'"
         if command == ".tables": command = "SELECT name FROM sqlite_master WHERE type = 'table'"
+        if "insert into pingers" in command and "%chat_id%" in command: command = command.replace("%chat_id%", str(update.message.chat_id))
 
         conn = sqlite3.connect(DATABASE)
         db = conn.cursor()
 
+        print(command)
+        
         try:
-            out_text = "\n".join([ " - ".join(i) for i in db.execute(command).fetchall()])
+            out_text = "\n".join([" | ".join([str(i) for i in i]) for i in db.execute(command).fetchall()])
         except (sqlite3.OperationalError, sqlite3.IntegrityError):
             out_text = command = "Bad command"
 
@@ -416,14 +422,24 @@ def manage(bot, update, args):
 
 def create_table():
 
-    db_check_file = open(DATABASE, 'r+')
-    db_check_file.close()
+    flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY
+
+    try:
+        db_check_file = os.open(DATABASE, flags)
+    except OSError as e:
+        if e.errno == errno.EEXIST: 
+            pass
+        else: 
+            raise
+    else:  
+        os.fdopen(db_check_file, 'w')
 
     conn = sqlite3.connect(DATABASE)
     db = conn.cursor()
 
     tables = [
-        "CREATE TABLE pingers(username varchar(255), match varchar(255) PRIMARY KEY)",
+        "CREATE TABLE pingers(id integer PRIMARY KEY AUTOINCREMENT, username varchar(255),\
+                              chat_id varchar(255), match varchar(255))",
         "CREATE TABLE ping_phrases(phrase varchar(255) PRIMARY KEY)",
         "CREATE TABLE google_ignore(ignore varchar(255) PRIMARY KEY)",
         "CREATE TABLE google(match varchar(255) PRIMARY KEY)",
