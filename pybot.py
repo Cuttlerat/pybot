@@ -110,7 +110,7 @@ def weather(bot, update, args):
     try:
         now_temp  = w_response["data"]["current_condition"][0]["temp_C"]
         if now_temp[0] != '-': now_temp = '+' + now_temp
-    except KeyError:
+    except (KeyError, json.decoder.JSONDecodeError):
         error_message='Wrong location!'
 
         bot.send_message(chat_id=update.message.chat_id, text = error_message )
