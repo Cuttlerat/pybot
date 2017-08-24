@@ -436,23 +436,25 @@ def pinger(bot,update,args):
                           'command': " ".join(command), 
                          'username': update.message.from_user.username }
             print('{timestamp}: Added pinger "{command}" by @{username}'.format(**log_dict))
+            conn.commit()
+            db.close()
+            conn.close()
         except:
             bot.send_message( chat_id = update.message.chat_id, text = "There was some trouble" )
             log_dict = {'timestamp': log_timestamp(), 
                           'command': " ".join(command), 
                          'username': update.message.from_user.username }
             print('{timestamp}: Error while add pinger "{command}" by @{username}'.format(**log_dict))
+            conn.commit()
+            db.close()
+            conn.close()
     else:
         bot.send_message( chat_id = update.message.chat_id, text = "You are not an administrator" )
         log_dict = {'timestamp': log_timestamp(), 
-                      'command': " ".join(command), 
                      'username': update.message.from_user.username }
-        print('{timestamp}: Trying to pinger "{command}" by @{username}'.format(**log_dict))
+        print('{timestamp}: Trying to pinger by @{username}'.format(**log_dict))
 
 
-    conn.commit()
-    db.close()
-    conn.close()
 
 #==== End of pinger function ================================================
 
