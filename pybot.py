@@ -324,11 +324,11 @@ def parser(bot, update):
                 '''.format(in_text, chat_id)).fetchall() for i in i ])
             if 'EVERYONE GET IN HERE' in out_text:
                 pingers_check = db.execute('''
-                    SELECT EXISTS(SELECT 1 FROM ping_exclude WHERE "{0}" LIKE '%'||ping_exclude.match||'%' AND "{1}" == chat_id) LIMIT 1
-                    '''.format(in_text)).fetchone()
+                    SELECT EXISTS(SELECT 1 FROM ping_exclude WHERE "{0}" LIKE '%'||ping_exclude.match||'%' AND ("{1}" == chat_id OR chat_id == "all")) LIMIT 1
+                    '''.format(in_text,chat_id)).fetchone()
                 if 1 in pingers_check:
                     out_text = " ".join([ i for i in db.execute('''
-                    SELECT DISTINCT username FROM pingers WHERE "{0} {1}" NOT LIKE '%'||username||'%' AND "{2}" == chat_id 
+                    SELECT DISTINCT username FROM pingers WHERE "{0} {1}" NOT LIKE '%'||username||'%' AND ("{2}" == chat_id OR chat_id == "all")
                     '''.format(update.message.from_user.username, out_text, chat_id)).fetchall() for i in i ])
                 else:
                     out_text = " ".join([ i for i in db.execute('''
