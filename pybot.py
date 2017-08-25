@@ -298,45 +298,45 @@ def parser(bot, update):
         chat_id = update.message.chat_id
         try:
             ses.query(ping_phrases.phrase).filter(literal(in_text).contains(ping_phrases.phrase)).one()
+            usernames = ses.query(pingers.username).filter(
+                    and_(
+                    literal(in_text).contains(pingers.match),
+                    or_(
+                        pingers.chat_id == chat_id,
+                        pingers.chat_id == "all")
+                    )).distinct().all()
+            usernames = [i for i in usernames for i in i]
+            if 'EVERYONE GET IN HERE' in usernames:
+                try:
+                    ses.query(ping_exclude.match).filter(literal(in_text).contains(ping_exclude.match)).one()
+                    usernames = ses.query(pingers.username).filter(
+                            and_(
+                            pingers.username.notin_(usernames),
+                            or_(
+                                pingers.chat_id == chat_id,
+                                pingers.chat_id == "all")
+                            )).distinct().all()
+                    usernames = [ i for i in usernames for i in i ]
+
+                except NoResultFound:
+                    usernames = ses.query(pingers.username).filter(
+                            and_(
+                            pingers.username != 'EVERYONE GET IN HERE',
+                            or_(
+                                pingers.chat_id == chat_id,
+                                pingers.chat_id == "all")
+                            )).distinct().all()
+                    usernames = [i for i in usernames for i in i ]
+
+            if usernames:
+                out_text = " ".join([ "@"+i for i in usernames ])
+                bot.send_message( chat_id = update.message.chat_id, text = out_text )
+                log_dict = {'timestamp': log_timestamp(), 
+                              'pingers': out_text, 
+                             'username': update.message.from_user.username }
+                print('{timestamp}: ping "{pingers}" by @{username}'.format(**log_dict))
         except NoResultFound:
-            return
-        usernames = ses.query(pingers.username).filter(
-                and_(
-                literal(in_text).contains(pingers.match),
-                or_(
-                    pingers.chat_id == chat_id,
-                    pingers.chat_id == "all")
-                )).distinct().all()
-        usernames = [i for i in usernames for i in i]
-        if 'EVERYONE GET IN HERE' in usernames:
-            try:
-                ses.query(ping_exclude.match).filter(literal(in_text).contains(ping_exclude.match)).one()
-                usernames = ses.query(pingers.username).filter(
-                        and_(
-                        pingers.username.notin_(usernames),
-                        or_(
-                            pingers.chat_id == chat_id,
-                            pingers.chat_id == "all")
-                        )).distinct().all()
-                usernames = [ i for i in usernames for i in i ]
-
-            except NoResultFound:
-                usernames = ses.query(pingers.username).filter(
-                        and_(
-                        pingers.username != 'EVERYONE GET IN HERE',
-                        or_(
-                            pingers.chat_id == chat_id,
-                            pingers.chat_id == "all")
-                        )).distinct().all()
-                usernames = [i for i in usernames for i in i ]
-
-        if usernames:
-            out_text = " ".join([ "@"+i for i in usernames ])
-            bot.send_message( chat_id = update.message.chat_id, text = out_text )
-            log_dict = {'timestamp': log_timestamp(), 
-                          'pingers': out_text, 
-                         'username': update.message.from_user.username }
-            print('{timestamp}: ping "{pingers}" by @{username}'.format(**log_dict))
+            pass
 
     # ------------ Answer ----------------- 
 
