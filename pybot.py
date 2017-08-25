@@ -336,7 +336,7 @@ def parser(bot, update):
             log_dict = {'timestamp': log_timestamp(), 
                           'pingers': out_text, 
                          'username': update.message.from_user.username }
-            print("{timestamp}: ping {pingers} by @{username}".format(**log_dict))
+            print('{timestamp}: ping "{pingers}" by @{username}'.format(**log_dict))
 
     # ------------ Answer ----------------- 
 
