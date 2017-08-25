@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+
+# Import {{{
 import json
 import requests
 import pytz 
@@ -19,8 +21,11 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import NoResultFound
 from dateutil.tz import tzlocal
 from tokens import *
+# }}}
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+
+DATABASE ='sqlite:///{}'.format(DATABASE_HOST) 
 
 #===========FUNCTIONS========================================================
 
@@ -57,44 +62,34 @@ def get_emoji(emoji_code):
 
 def weather(bot, update, args):
 
-    conn = sqlite3.connect(DATABASE)
-    db = conn.cursor()
+    city = "".join(args)
+    username = update.message.from_user.username
 
-    try:
-        db_check = db.execute('''
-        SELECT EXISTS(SELECT 1 FROM locations WHERE "{0}" LIKE locations.username) LIMIT 1
-        '''.format(update.message.from_user.username)).fetchone()
-        if 1 in db_check and not args:
-            city = ''.join(db.execute('''
-            SELECT city FROM locations WHERE "{0}" LIKE locations.username
-            '''.format(update.message.from_user.username)).fetchone())
-        else:
-            city = ' '.join(args) if args else ''.join(db.execute('''
-                                                SELECT city FROM locations WHERE username="default_city"
-                                                ''').fetchone())
-    except:
-        if update.message.from_user.username in ADMINS:
-            error_message = '''You didn't set the default city
-                               You can add default city by this command:
-                               `/manage insert into locations(username,city) values(\"default_city\",\"YOUR CITY HERE\")`'''
-            error_message = "\n".join([ i.strip() for i in error_message.split('\n') ])
-        else:
-            error_message = "Administrator didn't set the default city\nTry /w City"
-        bot.send_message(chat_id=update.message.chat_id, parse_mode = 'markdown', text = error_message )
+    engine = create_engine(DATABASE)
+    Base = automap_base()
+    Base.prepare(engine, reflect=True)
 
-        # LOG
-        log_dict = {'timestamp': log_timestamp(), 
-                'error_message': "Wrong location", 
-                     'username': update.message.from_user.username }
-        print("{timestamp}: \"{error_message}\" by @{username}".format(**log_dict))
-        conn.commit()
-        db.close()
-        conn.close()
-        return
+    locations = Base.classes.locations
 
-    conn.commit()
-    db.close()
-    conn.close()
+    if not city:
+        with conn(engine) as ses:
+            try:
+                city = ses.query(locations.city).filter(locations.username == username).one()
+                city = [ i for i in city ]
+            except NoResultFound:
+                try:
+                    city = ses.query(locations.city).filter(locations.username == "default_city").one()
+                    city = [ i for i in city ]
+                except NoResultFound:
+                    if username in ADMINS:
+                        error_message = '''You didn't set the default city
+                                           You can add default city by this command:
+                                           `/manage insert into locations(username,city) values(\"default_city\",\"YOUR CITY HERE\")`'''
+                        error_message = "\n".join([ i.strip() for i in error_message.split('\n') ])
+                    else:
+                        error_message = "Administrator didn't set the default city\nTry /w City"
+                    bot.send_message(chat_id=update.message.chat_id, parse_mode = 'markdown', text = error_message )
+                    return
 
     w_params = {        'q': city, 
                       'key': WEATHER_TOKEN, 
@@ -124,7 +119,6 @@ def weather(bot, update, args):
 
         bot.send_message(chat_id=update.message.chat_id, text = error_message )
 
-        # LOG
         log_dict = {'timestamp': log_timestamp(), 
                 'error_message': "Wrong location", 
                      'username': update.message.from_user.username }
@@ -183,38 +177,35 @@ def weather(bot, update, args):
 def wset(bot, update, args):
 
     city = "".join(args)
-    conn = sqlite3.connect(DATABASE)
-    db = conn.cursor()
+    username = update.message.from_user.username
 
-    db_check = db.execute('''
-    SELECT EXISTS(SELECT 1 FROM locations WHERE "{0}" LIKE locations.username) LIMIT 1
-    '''.format(update.message.from_user.username)).fetchone()
+    engine = create_engine(DATABASE)
+    Base = automap_base()
+    Base.prepare(engine, reflect=True)
 
-    if 1 in db_check:
-        if not city or city == "delete":
-            db.execute('''
-            DELETE FROM locations WHERE "{0}" LIKE locations.username
-            '''.format(update.message.from_user.username))
-            out_text = "Deleted information about @{0}".format(update.message.from_user.username)
-            city = 'deleted'
-        else:
-            db.execute('''
-            UPDATE locations SET city="{1}" WHERE username="{0}"
-            '''.format(update.message.from_user.username, city))
-            out_text = "New city for @{0}: {1}".format(update.message.from_user.username,city)
-    else:
-        if not city or "delete" in city:
-            out_text = "No informaton about @{0}".format(update.message.from_user.username)
-            city = 'none'
-        else:
-            db.execute('''
-            INSERT INTO locations(username, city) VALUES("{0}","{1}")
-            '''.format(update.message.from_user.username,city))
-            out_text = "Added @{0}: {1}".format(update.message.from_user.username,city)
+    locations = Base.classes.locations
 
-    conn.commit()
-    db.close()
-    conn.close()
+    with conn(engine) as ses:
+        try:
+            ses.query(locations.username).filter(locations.username == username).one()
+            if not city or city == "delete":
+                ses.query(locations.username).filter(locations.username == username).delete()
+                out_text = "Deleted information about @{0}".format(username)
+                city = 'deleted'
+            else:
+                ses.query(locations.username).update(locations.username == username)
+                out_text = "New city for @{0}: {1}".format(username,city)
+
+        except NoResultFound:
+            if not city or city == "delete":
+                out_text = "No informaton about @{0}".format(update.message.from_user.username)
+                city = 'none'
+            else:
+                new_location = locations(
+                    username = username,
+                    city = city)
+                ses.add(new_location)
+                out_text = "Added @{0}: {1}".format(update.message.from_user.username,city)
 
     bot.send_message( chat_id = update.message.chat_id, text = out_text )
     log_dict = {'timestamp': log_timestamp(), 
@@ -259,7 +250,6 @@ def loglist(bot, update, args):
         quote_text = l_raw_json['content']
         bot.send_message(chat_id = update.message.chat_id, text = "#"+quote_id+"\n"+quote_text+"\n", disable_web_page_preview = 1)
 
-    # LOG
     log_dict = {'timestamp': log_timestamp(), 
                     'count': count, 
                  'username': update.message.from_user.username }
@@ -270,17 +260,16 @@ def loglist(bot, update, args):
 def parser(bot, update):
 
     in_text = update.message.text.lower().replace('ё','е')
-    engine = create_engine('sqlite:///{}'.format(DATABASE))
+    engine = create_engine(DATABASE)
     Base = automap_base()
     Base.prepare(engine, reflect=True)
+
     answers = Base.classes.answers
     google_ignore = Base.classes.google_ignore
     google = Base.classes.google
     ping_phrases = Base.classes.ping_phrases
     ping_exclude = Base.classes.ping_exclude
     pingers = Base.classes.pingers
-
-    #conn = sqlite3.connect(DATABASE)
 
     # ------------ Google ----------------- 
 
@@ -292,9 +281,9 @@ def parser(bot, update):
             matches = ses.query(google.match).filter(literal(g_in_text).contains(google.match)).all()
             matches = [i for i in matches for i in i]
             if matches:
-                g_in_text = " ".join(g_in_text.replace(sorted(matches, key=len)[-1],"").strip().split(' '))
+                g_in_text = g_in_text.replace(sorted(matches, key=len)[-1],"").strip()
                 
-                if g_in_text != "":
+                if g_in_text:
                     out_text = 'https://www.google.ru/search?q={0}'.format(g_in_text.replace(" ","+"))
                     bot.send_message( chat_id = update.message.chat_id, disable_web_page_preview = 1, text = out_text )
                     log_dict = {'timestamp': log_timestamp(), 
@@ -304,6 +293,7 @@ def parser(bot, update):
                 return
 
     # ------------ Ping ----------------- 
+
     with conn(engine) as ses:
         chat_id = update.message.chat_id
         try:
@@ -349,6 +339,7 @@ def parser(bot, update):
             print("{timestamp}: ping {pingers} by @{username}".format(**log_dict))
 
     # ------------ Answer ----------------- 
+
     with conn(engine) as ses:
        out_text = ses.query(answers.string).filter(literal(in_text).contains(answers.match))
     for message in ["".join(i) for i in out_text]:
@@ -372,7 +363,7 @@ def manage(bot, update, args):
         if command == ".tables": command = "SELECT name FROM sqlite_master WHERE type = 'table'"
         if "%%%chat_id%%%" in command: command = command.replace("%%%chat_id%%%", str(update.message.chat_id))
 
-        engine = create_engine('sqlite:///{}'.format(DATABASE))
+        engine = create_engine(DATABASE)
         conn = engine.connect()
 
         try:
@@ -403,7 +394,7 @@ def pinger(bot,update,args):
         username = command[0]
         match = " ".join(command[1:])
 
-        engine = create_engine('sqlite:///{}'.format(DATABASE))
+        engine = create_engine(DATABASE)
         Base = automap_base()
         Base.prepare(engine, reflect=True)
         pingers = Base.classes.pingers
@@ -434,33 +425,12 @@ def pinger(bot,update,args):
 
 #==== End of pinger function ================================================
 
-def test(bot,update,args):
-
-    #engine = create_engine('sqlite:///{}'.format(DATABASE))
-    #Base = automap_base()
-    #Base.prepare(engine, reflect=True)
-    #pingers = Base.classes.pingers
-
-    #with conn(engine) as ses:
-    #    res = ses.query(pingers.username)
-    #    
-    
-    engine = create_engine('sqlite:///{}'.format(DATABASE))
-    Base = automap_base()
-    Base.prepare(engine, reflect=True)
-    answers = Base.classes.answers
-
-    with conn(engine) as ses:
-        res = ses.query(answers.string).filter(literal("kekek kokok").contains(answers.match))
-    bot.send_message( chat_id = update.message.chat_id, text = "".join([i for i in res for i in i]) )
-    
-
 def create_table():
 
     flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY
 
     try:
-        db_check_file = os.open(DATABASE, flags)
+        db_check_file = os.open(DATABASE_HOST, flags)
     except OSError as e:
         if e.errno == errno.EEXIST: 
             pass
@@ -469,7 +439,7 @@ def create_table():
     else:  
         os.fdopen(db_check_file, 'w')
 
-    engine = create_engine('sqlite:///{}'.format(DATABASE))
+    engine = create_engine(DATABASE)
     metadata = MetaData(engine)
 
     pingers = Table('pingers', metadata,
@@ -535,7 +505,8 @@ dispatcher.add_handler(CommandHandler('ibash', ibash, pass_args=True))
 dispatcher.add_handler(CommandHandler('loglist', loglist, pass_args=True))
 dispatcher.add_handler(CommandHandler('manage', manage, pass_args=True))
 dispatcher.add_handler(CommandHandler('pinger', pinger, pass_args=True))
-dispatcher.add_handler(CommandHandler('test', test, pass_args=True))
 dispatcher.add_handler(MessageHandler(Filters.text, parser))
 
 updater.start_polling()
+
+# vim: set fdm=marker:

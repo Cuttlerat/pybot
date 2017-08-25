@@ -25,7 +25,7 @@ Add your telegram username, tokens, and database path into `./tokens.py` file
 ```python
 BOT_TOKEN = '<YOUR TOKEN>'
 WEATHER_TOKEN = '<YOUR TOKEN>'
-DATABASE = 'data/pybot.db'
+DATABASE_HOST = 'data/pybot.db'
 ADMINS = [ 'YOUR TELEGRAM USERNAME WITHOUT @' ]
 ```
 
