@@ -1,19 +1,31 @@
 #!/usr/bin/env python3
+
+# Import {{{
 import json
 import requests
 import pytz 
 import sqlite3
 import logging
 import os
+import sys
 import errno
 
 from bs4 import BeautifulSoup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from contextlib import contextmanager
 from datetime import datetime
+from sqlalchemy import *
+from sqlalchemy.ext.automap import automap_base
+from sqlalchemy.exc import ResourceClosedError
+from sqlalchemy.orm import Session
+from sqlalchemy.orm.exc import NoResultFound
 from dateutil.tz import tzlocal
 from tokens import *
+# }}}
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+
+DATABASE ='sqlite:///{}'.format(DATABASE_HOST) 
 
 #===========FUNCTIONS========================================================
 
@@ -50,44 +62,34 @@ def get_emoji(emoji_code):
 
 def weather(bot, update, args):
 
-    conn = sqlite3.connect(DATABASE)
-    db = conn.cursor()
+    city = "".join(args)
+    username = update.message.from_user.username
 
-    try:
-        db_check = db.execute('''
-        SELECT EXISTS(SELECT 1 FROM locations WHERE "{0}" LIKE locations.username) LIMIT 1
-        '''.format(update.message.from_user.username)).fetchone()
-        if 1 in db_check and not args:
-            city = ''.join(db.execute('''
-            SELECT city FROM locations WHERE "{0}" LIKE locations.username
-            '''.format(update.message.from_user.username)).fetchone())
-        else:
-            city = ' '.join(args) if args else ''.join(db.execute('''
-                                                SELECT city FROM locations WHERE username="default_city"
-                                                ''').fetchone())
-    except:
-        if update.message.from_user.username in ADMINS:
-            error_message = '''You didn't set the default city
-                               You can add default city by this command:
-                               `/manage insert into locations(username,city) values(\"default_city\",\"YOUR CITY HERE\")`'''
-            error_message = "\n".join([ i.strip() for i in error_message.split('\n') ])
-        else:
-            error_message = "Administrator didn't set the default city\nTry /w City"
-        bot.send_message(chat_id=update.message.chat_id, parse_mode = 'markdown', text = error_message )
+    engine = create_engine(DATABASE)
+    Base = automap_base()
+    Base.prepare(engine, reflect=True)
 
-        # LOG
-        log_dict = {'timestamp': log_timestamp(), 
-                'error_message': "Wrong location", 
-                     'username': update.message.from_user.username }
-        print("{timestamp}: \"{error_message}\" by @{username}".format(**log_dict))
-        conn.commit()
-        db.close()
-        conn.close()
-        return
+    locations = Base.classes.locations
 
-    conn.commit()
-    db.close()
-    conn.close()
+    if not city:
+        with conn(engine) as ses:
+            try:
+                city = ses.query(locations.city).filter(locations.username == username).one()
+                city = [ i for i in city ]
+            except NoResultFound:
+                try:
+                    city = ses.query(locations.city).filter(locations.username == "default_city").one()
+                    city = [ i for i in city ]
+                except NoResultFound:
+                    if username in ADMINS:
+                        error_message = '''You didn't set the default city
+                                           You can add default city by this command:
+                                           `/manage insert into locations(username,city) values(\"default_city\",\"YOUR CITY HERE\")`'''
+                        error_message = "\n".join([ i.strip() for i in error_message.split('\n') ])
+                    else:
+                        error_message = "Administrator didn't set the default city\nTry /w City"
+                    bot.send_message(chat_id=update.message.chat_id, parse_mode = 'markdown', text = error_message )
+                    return
 
     w_params = {        'q': city, 
                       'key': WEATHER_TOKEN, 
@@ -117,7 +119,6 @@ def weather(bot, update, args):
 
         bot.send_message(chat_id=update.message.chat_id, text = error_message )
 
-        # LOG
         log_dict = {'timestamp': log_timestamp(), 
                 'error_message': "Wrong location", 
                      'username': update.message.from_user.username }
@@ -176,38 +177,35 @@ def weather(bot, update, args):
 def wset(bot, update, args):
 
     city = "".join(args)
-    conn = sqlite3.connect(DATABASE)
-    db = conn.cursor()
+    username = update.message.from_user.username
 
-    db_check = db.execute('''
-    SELECT EXISTS(SELECT 1 FROM locations WHERE "{0}" LIKE locations.username) LIMIT 1
-    '''.format(update.message.from_user.username)).fetchone()
+    engine = create_engine(DATABASE)
+    Base = automap_base()
+    Base.prepare(engine, reflect=True)
 
-    if 1 in db_check:
-        if not city or city == "delete":
-            db.execute('''
-            DELETE FROM locations WHERE "{0}" LIKE locations.username
-            '''.format(update.message.from_user.username))
-            out_text = "Deleted information about @{0}".format(update.message.from_user.username)
-            city = 'deleted'
-        else:
-            db.execute('''
-            UPDATE locations SET city="{1}" WHERE username="{0}"
-            '''.format(update.message.from_user.username, city))
-            out_text = "New city for @{0}: {1}".format(update.message.from_user.username,city)
-    else:
-        if not city or "delete" in city:
-            out_text = "No informaton about @{0}".format(update.message.from_user.username)
-            city = 'none'
-        else:
-            db.execute('''
-            INSERT INTO locations(username, city) VALUES("{0}","{1}")
-            '''.format(update.message.from_user.username,city))
-            out_text = "Added @{0}: {1}".format(update.message.from_user.username,city)
+    locations = Base.classes.locations
 
-    conn.commit()
-    db.close()
-    conn.close()
+    with conn(engine) as ses:
+        try:
+            ses.query(locations.username).filter(locations.username == username).one()
+            if not city or city == "delete":
+                ses.query(locations.username).filter(locations.username == username).delete()
+                out_text = "Deleted information about @{0}".format(username)
+                city = 'deleted'
+            else:
+                ses.query(locations.username).update(locations.username == username)
+                out_text = "New city for @{0}: {1}".format(username,city)
+
+        except NoResultFound:
+            if not city or city == "delete":
+                out_text = "No informaton about @{0}".format(update.message.from_user.username)
+                city = 'none'
+            else:
+                new_location = locations(
+                    username = username,
+                    city = city)
+                ses.add(new_location)
+                out_text = "Added @{0}: {1}".format(update.message.from_user.username,city)
 
     bot.send_message( chat_id = update.message.chat_id, text = out_text )
     log_dict = {'timestamp': log_timestamp(), 
@@ -252,7 +250,6 @@ def loglist(bot, update, args):
         quote_text = l_raw_json['content']
         bot.send_message(chat_id = update.message.chat_id, text = "#"+quote_id+"\n"+quote_text+"\n", disable_web_page_preview = 1)
 
-    # LOG
     log_dict = {'timestamp': log_timestamp(), 
                     'count': count, 
                  'username': update.message.from_user.username }
@@ -263,124 +260,93 @@ def loglist(bot, update, args):
 def parser(bot, update):
 
     in_text = update.message.text.lower().replace('ё','е')
-    conn = sqlite3.connect(DATABASE)
+    engine = create_engine(DATABASE)
+    Base = automap_base()
+    Base.prepare(engine, reflect=True)
+
+    answers = Base.classes.answers
+    google_ignore = Base.classes.google_ignore
+    google = Base.classes.google
+    ping_phrases = Base.classes.ping_phrases
+    ping_exclude = Base.classes.ping_exclude
+    pingers = Base.classes.pingers
 
     # ------------ Google ----------------- 
-    try:
-        g_conn = sqlite3.connect(DATABASE)
-        g_db = g_conn.cursor()
-        out_text = ""
 
-        gi_db_check = g_db.execute('''
-        SELECT EXISTS(SELECT 1 FROM google_ignore WHERE "{0}" LIKE '%'||google_ignore.ignore||'%') LIMIT 1
-        '''.format(in_text)).fetchone()
-
-        if 0 in gi_db_check:
+    with conn(engine) as ses:
+       try:
+          ses.query(google_ignore.ignore).filter(literal(in_text).contains(google_ignore.ignore)).one()
+       except NoResultFound:
             g_in_text = in_text.replace(",","").replace(".","")
-            g_db_check = g_db.execute('''
-            SELECT EXISTS(SELECT 1 FROM google WHERE "{0}" LIKE '%'||google.match||'%') LIMIT 1
-            '''.format(g_in_text)).fetchone()
-            if 1 in g_db_check:
-                matches = [ i for i in g_db.execute('''
-                    SELECT * FROM google WHERE "{0}" LIKE '%'||google.match||'%' 
-                    '''.format(g_in_text)).fetchall() for i in i ]
-
-                g_conn.commit()
-                g_db.close()
-                g_conn.close()
-
-                g_in_text = g_in_text.replace(sorted(matches, key=len)[-1],"")
+            matches = ses.query(google.match).filter(literal(g_in_text).contains(google.match)).all()
+            matches = [i for i in matches for i in i]
+            if matches:
+                g_in_text = g_in_text.replace(sorted(matches, key=len)[-1],"").strip()
                 
-                out_text = 'https://www.google.ru/search?q={0}'.format(g_in_text.strip().replace(" ","+"))
-
-                if out_text:
+                if g_in_text:
+                    out_text = 'https://www.google.ru/search?q={0}'.format(g_in_text.replace(" ","+"))
                     bot.send_message( chat_id = update.message.chat_id, disable_web_page_preview = 1, text = out_text )
                     log_dict = {'timestamp': log_timestamp(), 
                                    'google': g_in_text.strip(),
                                  'username': update.message.from_user.username }
                     print('{timestamp}: Google "{google}" by @{username}'.format(**log_dict))
-                    return
-    except:
-        try:
-            g_conn.commit()
-            g_db.close()
-            g_conn.close()
-        except:
-            return
-        return
+                return
 
     # ------------ Ping ----------------- 
-    try:
+
+    with conn(engine) as ses:
         chat_id = update.message.chat_id
-        db = conn.cursor()
-        out_text = ""
-        db_check = db.execute('''
-        SELECT EXISTS(SELECT 1 FROM ping_phrases WHERE "{0}" LIKE '%'||ping_phrases.phrase||'%') LIMIT 1
-        '''.format(in_text)).fetchone()
+        try:
+            ses.query(ping_phrases.phrase).filter(literal(in_text).contains(ping_phrases.phrase)).one()
+        except NoResultFound:
+            return
+        usernames = ses.query(pingers.username).filter(
+                and_(
+                literal(in_text).contains(pingers.match),
+                or_(
+                    pingers.chat_id == chat_id,
+                    pingers.chat_id == "all")
+                )).distinct().all()
+        usernames = [i for i in usernames for i in i]
+        if 'EVERYONE GET IN HERE' in usernames:
+            try:
+                ses.query(ping_exclude.match).filter(literal(in_text).contains(ping_exclude.match)).one()
+                usernames = ses.query(pingers.username).filter(
+                        and_(
+                        pingers.username.notin_(usernames),
+                        or_(
+                            pingers.chat_id == chat_id,
+                            pingers.chat_id == "all")
+                        )).distinct().all()
+                usernames = [ i for i in usernames for i in i ]
 
-        if 1 in db_check:
-            out_text = " ".join([ i for i in db.execute('''
-                SELECT DISTINCT username FROM pingers WHERE "{0}" LIKE '%'||pingers.match||'%' AND ("{1}" == chat_id OR chat_id == "all")
-                '''.format(in_text, chat_id)).fetchall() for i in i ])
-            if 'EVERYONE GET IN HERE' in out_text:
-                pingers_check = db.execute('''
-                    SELECT EXISTS(SELECT 1 FROM ping_exclude WHERE "{0}" LIKE '%'||ping_exclude.match||'%') LIMIT 1
-                    '''.format(in_text)).fetchone()
-                if 1 in pingers_check:
-                    out_text = " ".join([ i for i in db.execute('''
-                    SELECT DISTINCT username FROM pingers WHERE "{0} {1}" NOT LIKE '%'||username||'%' AND ("{2}" == chat_id OR chat_id == "all")
-                    '''.format(update.message.from_user.username, out_text, chat_id)).fetchall() for i in i ])
-                else:
-                    out_text = " ".join([ i for i in db.execute('''
-                    SELECT DISTINCT username FROM pingers WHERE pingers.username 
-                    NOT LIKE "EVERYONE GET IN HERE" AND pingers.username NOT LIKE "{0}" AND ("{1}" == chat_id OR chat_id == "all")
-                    '''.format(update.message.from_user.username, chat_id)).fetchall() for i in i ])
+            except NoResultFound:
+                usernames = ses.query(pingers.username).filter(
+                        and_(
+                        pingers.username != 'EVERYONE GET IN HERE',
+                        or_(
+                            pingers.chat_id == chat_id,
+                            pingers.chat_id == "all")
+                        )).distinct().all()
+                usernames = [i for i in usernames for i in i ]
 
-        conn.commit()
-        db.close()
-        conn.close()
-
-        if out_text:
-            out_text = " ".join([ "@"+i for i in out_text.split(' ') ])
+        if usernames:
+            out_text = " ".join([ "@"+i for i in usernames ])
             bot.send_message( chat_id = update.message.chat_id, text = out_text )
             log_dict = {'timestamp': log_timestamp(), 
                           'pingers': out_text, 
                          'username': update.message.from_user.username }
-            print("{timestamp}: ping \"{pingers}\" by @{username}".format(**log_dict))
-    except:
-        conn.commit()
-        db.close()
-        conn.close()
-        return
+            print('{timestamp}: ping "{pingers}" by @{username}'.format(**log_dict))
+
     # ------------ Answer ----------------- 
-    try:
-        a_conn = sqlite3.connect(DATABASE)
-        a_db = a_conn.cursor()
-        out_text = ""
 
-        a_db_check = a_db.execute('''
-        SELECT EXISTS(SELECT 1 FROM answers WHERE "{0}" LIKE '%'||answers.match||'%') LIMIT 1
-        '''.format(in_text)).fetchone()
-
-        if 1 in a_db_check:
-            out_text = [ i for i in a_db.execute('''
-                SELECT string FROM answers WHERE "{0}" LIKE '%'||answers.match||'%' 
-                '''.format(in_text)).fetchall() for i in i ]
-
-        a_conn.commit()
-        a_db.close()
-        a_conn.close()
-
-        for message in out_text:
-            bot.send_message( chat_id = update.message.chat_id, text = message )
-            log_dict = {'timestamp': log_timestamp(), 
-                         'username': update.message.from_user.username }
-            print("{timestamp}: Answer by @{username}".format(**log_dict))
-    except:
-        a_conn.commit()
-        a_db.close()
-        a_conn.close()
-        return
+    with conn(engine) as ses:
+       out_text = ses.query(answers.string).filter(literal(in_text).contains(answers.match))
+    for message in ["".join(i) for i in out_text]:
+        bot.send_message( chat_id = update.message.chat_id, text = message )
+        log_dict = {'timestamp': log_timestamp(), 
+                     'username': update.message.from_user.username }
+        print("{timestamp}: Answer by @{username}".format(**log_dict))
 
 
 #==== End of parser function ================================================
@@ -395,15 +361,20 @@ def manage(bot, update, args):
 
         if command == ".schema": command = "SELECT sql FROM sqlite_master WHERE type = 'table'"
         if command == ".tables": command = "SELECT name FROM sqlite_master WHERE type = 'table'"
-        if "%%%chat_id%%%" in command: command = command.replace("%chat_id%", str(update.message.chat_id))
+        if "%%%chat_id%%%" in command: command = command.replace("%%%chat_id%%%", str(update.message.chat_id))
 
-        conn = sqlite3.connect(DATABASE)
-        db = conn.cursor()
+        engine = create_engine(DATABASE)
+        conn = engine.connect()
 
         try:
-            out_text = "\n".join([" | ".join([str(i) for i in i]) for i in db.execute(command).fetchall()])
-        except (sqlite3.OperationalError, sqlite3.IntegrityError):
+            out_text = "\n".join([" | ".join([str(i) for i in i]) for i in engine.execute(command).fetchall()])
+            conn.close()
+        except ResourceClosedError:
+            out_text = command = "Successfuly"
+            conn.close()
+        except:
             out_text = command = "Bad command"
+            conn.close()
 
     if out_text:
         bot.send_message( chat_id = update.message.chat_id, text = out_text )
@@ -412,9 +383,6 @@ def manage(bot, update, args):
                      'username': update.message.from_user.username }
         print('{timestamp}: Manage "{command}" by @{username}'.format(**log_dict))
 
-    conn.commit()
-    db.close()
-    conn.close()
 
 #==== End of manage function ================================================
 
@@ -426,35 +394,34 @@ def pinger(bot,update,args):
         username = command[0]
         match = " ".join(command[1:])
 
-        conn = sqlite3.connect(DATABASE)
-        db = conn.cursor()
+        engine = create_engine(DATABASE)
+        Base = automap_base()
+        Base.prepare(engine, reflect=True)
+        pingers = Base.classes.pingers
 
         try:
-            db.execute('INSERT INTO pingers(username,match,chat_id) values("{0}","{1}","{2}")'.format(username,match,chat_id))
+            with conn(engine) as ses:
+                new_pinger = pingers(
+                    username = username,
+                    match = match,
+                    chat_id = chat_id)
+                ses.add(new_pinger)
             bot.send_message( chat_id = update.message.chat_id, text = "Successfuly added" )
             log_dict = {'timestamp': log_timestamp(), 
                           'command': " ".join(command), 
                          'username': update.message.from_user.username }
             print('{timestamp}: Added pinger "{command}" by @{username}'.format(**log_dict))
-            conn.commit()
-            db.close()
-            conn.close()
         except:
             bot.send_message( chat_id = update.message.chat_id, text = "There was some trouble" )
             log_dict = {'timestamp': log_timestamp(), 
                           'command': " ".join(command), 
                          'username': update.message.from_user.username }
             print('{timestamp}: Error while add pinger "{command}" by @{username}'.format(**log_dict))
-            conn.commit()
-            db.close()
-            conn.close()
     else:
         bot.send_message( chat_id = update.message.chat_id, text = "You are not an administrator" )
         log_dict = {'timestamp': log_timestamp(), 
                      'username': update.message.from_user.username }
         print('{timestamp}: Trying to pinger by @{username}'.format(**log_dict))
-
-
 
 #==== End of pinger function ================================================
 
@@ -463,7 +430,7 @@ def create_table():
     flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY
 
     try:
-        db_check_file = os.open(DATABASE, flags)
+        db_check_file = os.open(DATABASE_HOST, flags)
     except OSError as e:
         if e.errno == errno.EEXIST: 
             pass
@@ -472,32 +439,53 @@ def create_table():
     else:  
         os.fdopen(db_check_file, 'w')
 
-    conn = sqlite3.connect(DATABASE)
-    db = conn.cursor()
+    engine = create_engine(DATABASE)
+    metadata = MetaData(engine)
 
-    tables = [
-        "CREATE TABLE pingers(id integer PRIMARY KEY AUTOINCREMENT, username varchar(255),\
-                              chat_id varchar(255), match varchar(255))",
-        "CREATE TABLE ping_phrases(phrase varchar(255) PRIMARY KEY)",
-        "CREATE TABLE google_ignore(ignore varchar(255) PRIMARY KEY)",
-        "CREATE TABLE google(match varchar(255) PRIMARY KEY)",
-        "CREATE TABLE locations(username varchar(255) PRIMARY KEY, city varchar(255))",
-        "CREATE TABLE answers(match varchar(255) PRIMARY KEY, string varchar(255))",
-        "CREATE TABLE ping_exclude(match varchar(255) PRIMARY KEY)"
-        ]
+    pingers = Table('pingers', metadata,
+            Column('id', Integer, primary_key = True, autoincrement = True),
+            Column('username', Unicode(255)),
+            Column('chat_id', Unicode(255)),
+            Column('match', Unicode(255)))
 
-    for command in tables:
-        try: 
-            db.execute(command)
-        except sqlite3.OperationalError:
-            pass
+    ping_phrases = Table('ping_phrases', metadata,
+            Column('phrase', Unicode(255), primary_key = True))
 
-    conn.commit()
-    db.close()
-    conn.close()
+    google_ignore = Table('google_ignore', metadata,
+            Column('ignore', Unicode(255), primary_key = True))
+
+    google = Table('google', metadata,
+            Column('match', Unicode(255), primary_key = True))
+
+    locations = Table('locations', metadata,
+            Column('username', Unicode(255), primary_key = True),
+            Column('city', Unicode(255)))
+
+    answers = Table('answers', metadata,
+            Column('match', Unicode(255), primary_key = True),
+            Column('string', Unicode(255)))
+
+    ping_exclude = Table('ping_exclude', metadata,
+            Column('match', Unicode(255), primary_key = True))
+
+    metadata.create_all()
 
 def log_timestamp():
     return(datetime.now(tzlocal()).strftime("[%d/%b/%Y:%H:%M:%S %z]"))
+
+@contextmanager
+def conn(engine):
+    session = Session(engine)
+    try:
+        yield session
+        session.commit()
+    except:
+        error = str(sys.exc_info())
+        print("Error is: ", error)
+        session.rollback()
+        raise
+    finally:
+            session.close()
 
 #============================================================================
 
@@ -520,3 +508,5 @@ dispatcher.add_handler(CommandHandler('pinger', pinger, pass_args=True))
 dispatcher.add_handler(MessageHandler(Filters.text, parser))
 
 updater.start_polling()
+
+# vim: set fdm=marker:
