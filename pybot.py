@@ -14,7 +14,9 @@ from contextlib import contextmanager
 from datetime import datetime
 from sqlalchemy import *
 from sqlalchemy.ext.automap import automap_base
+from sqlalchemy.exc import ResourceClosedError
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.exc import NoResultFound
 from dateutil.tz import tzlocal
 from tokens import *
 
@@ -268,124 +270,92 @@ def loglist(bot, update, args):
 def parser(bot, update):
 
     in_text = update.message.text.lower().replace('ё','е')
-    conn = sqlite3.connect(DATABASE)
+    engine = create_engine('sqlite:///{}'.format(DATABASE))
+    Base = automap_base()
+    Base.prepare(engine, reflect=True)
+    answers = Base.classes.answers
+    google_ignore = Base.classes.google_ignore
+    google = Base.classes.google
+    ping_phrases = Base.classes.ping_phrases
+    ping_exclude = Base.classes.ping_exclude
+    pingers = Base.classes.pingers
+
+    #conn = sqlite3.connect(DATABASE)
 
     # ------------ Google ----------------- 
-    try:
-        g_conn = sqlite3.connect(DATABASE)
-        g_db = g_conn.cursor()
-        out_text = ""
 
-        gi_db_check = g_db.execute('''
-        SELECT EXISTS(SELECT 1 FROM google_ignore WHERE "{0}" LIKE '%'||google_ignore.ignore||'%') LIMIT 1
-        '''.format(in_text)).fetchone()
-
-        if 0 in gi_db_check:
+    with conn(engine) as ses:
+       try:
+          ses.query(google_ignore.ignore).filter(literal(in_text).contains(google_ignore.ignore)).one()
+       except NoResultFound:
             g_in_text = in_text.replace(",","").replace(".","")
-            g_db_check = g_db.execute('''
-            SELECT EXISTS(SELECT 1 FROM google WHERE "{0}" LIKE '%'||google.match||'%') LIMIT 1
-            '''.format(g_in_text)).fetchone()
-            if 1 in g_db_check:
-                matches = [ i for i in g_db.execute('''
-                    SELECT * FROM google WHERE "{0}" LIKE '%'||google.match||'%' 
-                    '''.format(g_in_text)).fetchall() for i in i ]
-
-                g_conn.commit()
-                g_db.close()
-                g_conn.close()
-
-                g_in_text = g_in_text.replace(sorted(matches, key=len)[-1],"")
+            matches = ses.query(google.match).filter(literal(g_in_text).contains(google.match)).all()
+            matches = [i for i in matches for i in i]
+            if matches:
+                g_in_text = " ".join(g_in_text.replace(sorted(matches, key=len)[-1],"").strip().split(' '))
                 
-                out_text = 'https://www.google.ru/search?q={0}'.format(g_in_text.strip().replace(" ","+"))
-
-                if out_text:
+                if g_in_text != "":
+                    out_text = 'https://www.google.ru/search?q={0}'.format(g_in_text.replace(" ","+"))
                     bot.send_message( chat_id = update.message.chat_id, disable_web_page_preview = 1, text = out_text )
                     log_dict = {'timestamp': log_timestamp(), 
                                    'google': g_in_text.strip(),
                                  'username': update.message.from_user.username }
                     print('{timestamp}: Google "{google}" by @{username}'.format(**log_dict))
-                    return
-    except:
-        try:
-            g_conn.commit()
-            g_db.close()
-            g_conn.close()
-        except:
-            return
-        return
+                return
 
     # ------------ Ping ----------------- 
-    try:
+    with conn(engine) as ses:
         chat_id = update.message.chat_id
-        db = conn.cursor()
-        out_text = ""
-        db_check = db.execute('''
-        SELECT EXISTS(SELECT 1 FROM ping_phrases WHERE "{0}" LIKE '%'||ping_phrases.phrase||'%') LIMIT 1
-        '''.format(in_text)).fetchone()
+        try:
+            ses.query(ping_phrases.phrase).filter(literal(in_text).contains(ping_phrases.phrase)).one()
+        except NoResultFound:
+            return
+        usernames = ses.query(pingers.username).filter(
+                and_(
+                literal(in_text).contains(pingers.match),
+                or_(
+                    pingers.chat_id == chat_id,
+                    pingers.chat_id == "all")
+                )).distinct().all()
+        usernames = [i for i in usernames for i in i]
+        if 'EVERYONE GET IN HERE' in usernames:
+            try:
+                ses.query(ping_exclude.match).filter(literal(in_text).contains(ping_exclude.match)).one()
+                usernames = ses.query(pingers.username).filter(
+                        and_(
+                        pingers.username.notin_(usernames),
+                        or_(
+                            pingers.chat_id == chat_id,
+                            pingers.chat_id == "all")
+                        )).distinct().all()
+                usernames = [ i for i in usernames for i in i ]
 
-        if 1 in db_check:
-            out_text = " ".join([ i for i in db.execute('''
-                SELECT DISTINCT username FROM pingers WHERE "{0}" LIKE '%'||pingers.match||'%' AND ("{1}" == chat_id OR chat_id == "all")
-                '''.format(in_text, chat_id)).fetchall() for i in i ])
-            if 'EVERYONE GET IN HERE' in out_text:
-                pingers_check = db.execute('''
-                    SELECT EXISTS(SELECT 1 FROM ping_exclude WHERE "{0}" LIKE '%'||ping_exclude.match||'%') LIMIT 1
-                    '''.format(in_text)).fetchone()
-                if 1 in pingers_check:
-                    out_text = " ".join([ i for i in db.execute('''
-                    SELECT DISTINCT username FROM pingers WHERE "{0} {1}" NOT LIKE '%'||username||'%' AND ("{2}" == chat_id OR chat_id == "all")
-                    '''.format(update.message.from_user.username, out_text, chat_id)).fetchall() for i in i ])
-                else:
-                    out_text = " ".join([ i for i in db.execute('''
-                    SELECT DISTINCT username FROM pingers WHERE pingers.username 
-                    NOT LIKE "EVERYONE GET IN HERE" AND pingers.username NOT LIKE "{0}" AND ("{1}" == chat_id OR chat_id == "all")
-                    '''.format(update.message.from_user.username, chat_id)).fetchall() for i in i ])
+            except NoResultFound:
+                usernames = ses.query(pingers.username).filter(
+                        and_(
+                        pingers.username != 'EVERYONE GET IN HERE',
+                        or_(
+                            pingers.chat_id == chat_id,
+                            pingers.chat_id == "all")
+                        )).distinct().all()
+                usernames = [i for i in usernames for i in i ]
 
-        conn.commit()
-        db.close()
-        conn.close()
-
-        if out_text:
-            out_text = " ".join([ "@"+i for i in out_text.split(' ') ])
+        if usernames:
+            out_text = " ".join([ "@"+i for i in usernames ])
             bot.send_message( chat_id = update.message.chat_id, text = out_text )
             log_dict = {'timestamp': log_timestamp(), 
                           'pingers': out_text, 
                          'username': update.message.from_user.username }
             print("{timestamp}: ping {pingers} by @{username}".format(**log_dict))
-    except:
-        conn.commit()
-        db.close()
-        conn.close()
-        return
+
     # ------------ Answer ----------------- 
-    try:
-        a_conn = sqlite3.connect(DATABASE)
-        a_db = a_conn.cursor()
-        out_text = ""
-
-        a_db_check = a_db.execute('''
-        SELECT EXISTS(SELECT 1 FROM answers WHERE "{0}" LIKE '%'||answers.match||'%') LIMIT 1
-        '''.format(in_text)).fetchone()
-
-        if 1 in a_db_check:
-            out_text = [ i for i in a_db.execute('''
-                SELECT string FROM answers WHERE "{0}" LIKE '%'||answers.match||'%' 
-                '''.format(in_text)).fetchall() for i in i ]
-
-        a_conn.commit()
-        a_db.close()
-        a_conn.close()
-
-        for message in out_text:
-            bot.send_message( chat_id = update.message.chat_id, text = message )
-            log_dict = {'timestamp': log_timestamp(), 
-                         'username': update.message.from_user.username }
-            print("{timestamp}: Answer by @{username}".format(**log_dict))
-    except:
-        a_conn.commit()
-        a_db.close()
-        a_conn.close()
-        return
+    with conn(engine) as ses:
+       out_text = ses.query(answers.string).filter(literal(in_text).contains(answers.match))
+    for message in ["".join(i) for i in out_text]:
+        bot.send_message( chat_id = update.message.chat_id, text = message )
+        log_dict = {'timestamp': log_timestamp(), 
+                     'username': update.message.from_user.username }
+        print("{timestamp}: Answer by @{username}".format(**log_dict))
 
 
 #==== End of parser function ================================================
@@ -400,13 +370,16 @@ def manage(bot, update, args):
 
         if command == ".schema": command = "SELECT sql FROM sqlite_master WHERE type = 'table'"
         if command == ".tables": command = "SELECT name FROM sqlite_master WHERE type = 'table'"
-        if "%%%chat_id%%%" in command: command = command.replace("%chat_id%", str(update.message.chat_id))
+        if "%%%chat_id%%%" in command: command = command.replace("%%%chat_id%%%", str(update.message.chat_id))
 
         engine = create_engine('sqlite:///{}'.format(DATABASE))
         conn = engine.connect()
 
         try:
             out_text = "\n".join([" | ".join([str(i) for i in i]) for i in engine.execute(command).fetchall()])
+            conn.close()
+        except ResourceClosedError:
+            out_text = command = "Successfuly"
             conn.close()
         except:
             out_text = command = "Bad command"
@@ -431,28 +404,28 @@ def pinger(bot,update,args):
         match = " ".join(command[1:])
 
         engine = create_engine('sqlite:///{}'.format(DATABASE))
-        conn = engine.connect()
-        metadata = MetaData(bind = engine, reflect = True)
-        pingers = metadata.tables['pingers']
+        Base = automap_base()
+        Base.prepare(engine, reflect=True)
+        pingers = Base.classes.pingers
 
         try:
-            conn.execute(pingers.insert().values(
-                username = username,
-                match = match,
-                chat_id = chat_id))
+            with conn(engine) as ses:
+                new_pinger = pingers(
+                    username = username,
+                    match = match,
+                    chat_id = chat_id)
+                ses.add(new_pinger)
             bot.send_message( chat_id = update.message.chat_id, text = "Successfuly added" )
             log_dict = {'timestamp': log_timestamp(), 
                           'command': " ".join(command), 
                          'username': update.message.from_user.username }
             print('{timestamp}: Added pinger "{command}" by @{username}'.format(**log_dict))
-            conn.close()
         except:
             bot.send_message( chat_id = update.message.chat_id, text = "There was some trouble" )
             log_dict = {'timestamp': log_timestamp(), 
                           'command': " ".join(command), 
                          'username': update.message.from_user.username }
             print('{timestamp}: Error while add pinger "{command}" by @{username}'.format(**log_dict))
-            conn.close()
     else:
         bot.send_message( chat_id = update.message.chat_id, text = "You are not an administrator" )
         log_dict = {'timestamp': log_timestamp(), 
@@ -463,15 +436,23 @@ def pinger(bot,update,args):
 
 def test(bot,update,args):
 
+    #engine = create_engine('sqlite:///{}'.format(DATABASE))
+    #Base = automap_base()
+    #Base.prepare(engine, reflect=True)
+    #pingers = Base.classes.pingers
+
+    #with conn(engine) as ses:
+    #    res = ses.query(pingers.username)
+    #    
+    
     engine = create_engine('sqlite:///{}'.format(DATABASE))
     Base = automap_base()
     Base.prepare(engine, reflect=True)
-    pingers = Base.classes.pingers
+    answers = Base.classes.answers
 
     with conn(engine) as ses:
-        res = ses.query(pingers.username)
-        
-    bot.send_message( chat_id = update.message.chat_id, text = "\n".join([i for i in res for i in i]) )
+        res = ses.query(answers.string).filter(literal("kekek kokok").contains(answers.match))
+    bot.send_message( chat_id = update.message.chat_id, text = "".join([i for i in res for i in i]) )
     
 
 def create_table():
