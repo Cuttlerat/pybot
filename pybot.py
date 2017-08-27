@@ -324,11 +324,11 @@ def parser(bot, update):
     with conn(engine) as ses:
         try:
             ses.query(google_ignore.ignore).filter(
-                literal(in_text).contains(google_ignore.ignore)).one()
+                google_ignore.ignore.in_(in_text.split())).one()
         except NoResultFound:
             g_in_text = in_text.replace(",", "").replace(".", "")
             matches = ses.query(google.match).filter(
-                literal(g_in_text).contains(google.match)).all()
+                literal(in_text).contains(google.match)).all()
             matches = [i for i in matches for i in i]
             if matches:
                 g_in_text = g_in_text.replace(
@@ -349,13 +349,14 @@ def parser(bot, update):
     # ------------ Ping -----------------
 
     with conn(engine) as ses:
+        in_text_list = in_text.split()
         chat_id = update.message.chat_id
         try:
             ses.query(ping_phrases.phrase).filter(
-                literal(in_text).contains(ping_phrases.phrase)).one()
+                ping_phrases.phrase.in_(in_text_list)).one()
             usernames = ses.query(pingers.username).filter(
                 and_(
-                    literal(in_text).contains(pingers.match),
+                    pingers.match.in_(in_text_list),
                     or_(
                         pingers.chat_id == chat_id,
                         pingers.chat_id == "all")
@@ -364,7 +365,7 @@ def parser(bot, update):
             if 'EVERYONE GET IN HERE' in usernames:
                 try:
                     ses.query(ping_exclude.match).filter(
-                        literal(in_text).contains(ping_exclude.match)).one()
+                        ping_exclude.match.in_(in_text_list)).one()
                     usernames = ses.query(pingers.username).filter(
                         and_(
                             pingers.username.notin_(usernames),
