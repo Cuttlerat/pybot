@@ -21,6 +21,7 @@ from sqlalchemy.exc import ResourceClosedError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import NoResultFound
 from dateutil.tz import tzlocal
+from datetime import datetime, timedelta
 from tokens import *
 # }}}
 
@@ -118,28 +119,55 @@ def nweather(bot, update, args):
                     return
 
     owm = pyowm.OWM(W_API_TOKEN, language='ru')
-    #observation = owm.weather_at_place(city)
     observation = owm.weather_at_place(city)
     fc = owm.three_hours_forecast(city)
-    f = fc.get_forecast()
     w = observation.get_weather()
-    fcc = []
-    for weather in f:
-        fcc.append([weather.get_reference_time('iso'), weather.get_temperature(unit='celsius')["temp"], weather.get_status(), weather.get_weather_icon_name()])
-    print(fcc)
-    now_temp = str(w.get_temperature(unit='celsius')["temp"])
+
+    weathers, tomorrow = {}, {}
+
+    # Today
+    today = pyowm.timeutils.next_three_hours()
+    weather = fc.get_weather_at(today)
+    temp = str(round(weather.get_temperature(unit='celsius')["temp"]))
+    if temp[0] != '-':
+        weathers["today", "temp", 0] = '+' + temp
+    weathers["today", "emoji", 0] = weather.get_weather_icon_name()
+    weathers["today", "status", 0] = weather.get_detailed_status()
+
+    # Tomorrow
+    for i in range(6,19,6):
+        tomorrow[i] = pyowm.timeutils.tomorrow(i, 0)
+
+        for j in tomorrow:
+            weather = fc.get_weather_at(tomorrow[j])
+            temp = str(round(weather.get_temperature(unit='celsius')["temp"]))
+            if temp[0] != '-':
+                weathers["tomorrow", "temp", j] = '+' + temp
+            weathers["tomorrow", "emoji", j] = weather.get_weather_icon_name()
+            weathers["tomorrow", "status", j] = weather.get_detailed_status()
+
+    now_temp = str(round(w.get_temperature(unit='celsius')["temp"]))
     if now_temp[0] != '-':
         now_temp = '+' + now_temp
-    now_comment = w.get_detailed_status()
+    now_status = w.get_detailed_status()
     now_emoji = w.get_weather_icon_name()
 
     message = ''.join("""
     *Now:*
     *{0}:* {1} {2} {3}
+
+    *In the near future:*
+    {4} {5} {6}
+
+    *Tomorrow:*
+    *Morning:* {7} {8} {9}
+    *Noon:* {10} {11} {12}
+    *Evening:* {13} {14} {15}
     """.format(city,
                now_temp,
                now_emoji,
-               now_comment))
+               now_status,
+               *[weathers[i] for i in weathers]))
 
     message = "\n".join([k.strip() for k in message.split('\n')])
 
@@ -252,7 +280,7 @@ def weather(bot, update, args):
     *Noon:* {8} {9} {10}
     *Evening:* {11} {12} {13}
 
-    *Tommorow:*
+    *Tomorrow:*
     *Morning:* {14} {15} {16}
     *Noon:* {17} {18} {19}
     *Evening:* {20} {21} {22}
