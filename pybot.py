@@ -9,6 +9,7 @@ import logging
 import os
 import sys
 import errno
+import pyowm
 
 from bs4 import BeautifulSoup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
@@ -78,6 +79,72 @@ def get_emoji(emoji_code):
     return("".join([i for i in emojis if emoji_code in [x for x in emojis[i]]]))
 
 # ==== End of get_emoji function =============================================
+
+def nweather(bot, update, args):
+
+    city = " ".join(args)
+    username = update.message.from_user.username
+
+    engine = create_engine(DATABASE)
+    Base = automap_base()
+    Base.prepare(engine, reflect=True)
+
+    locations = Base.classes.locations
+
+    if not city:
+        with conn(engine) as ses:
+            try:
+                city = ses.query(locations.city).filter(
+                    locations.username == username).one()
+                city = "".join([i for i in city])
+            except NoResultFound:
+                try:
+                    city = ses.query(locations.city).filter(
+                        locations.username == "default_city").one()
+                    city = "".join([i for i in city])
+                except NoResultFound:
+                    if username in ADMINS:
+                        error_message = '''
+                        You didn't set the default city
+                        You can add default city by this command:
+                        `/manage insert into locations(username,city) \
+                        values(\"default_city\",\"YOUR CITY HERE\")`'''
+                        error_message = "\n".join(
+                            [i.strip() for i in error_message.split('\n')])
+                    else:
+                        error_message = "Administrator didn't set the default city\nTry /w City"
+                    bot.send_message(chat_id=update.message.chat_id,
+                                     parse_mode='markdown', text=error_message)
+                    return
+
+    owm = pyowm.OWM(W_API_TOKEN, language='ru')
+    #observation = owm.weather_at_place(city)
+    observation = owm.weather_at_place(city)
+    fc = owm.three_hours_forecast(city)
+    f = fc.get_forecast()
+    w = observation.get_weather()
+    fcc = []
+    for weather in f:
+        fcc.append([weather.get_reference_time('iso'), weather.get_temperature(unit='celsius')["temp"], weather.get_status(), weather.get_weather_icon_name()])
+    print(fcc)
+    now_temp = str(w.get_temperature(unit='celsius')["temp"])
+    if now_temp[0] != '-':
+        now_temp = '+' + now_temp
+    now_comment = w.get_detailed_status()
+    now_emoji = w.get_weather_icon_name()
+
+    message = ''.join("""
+    *Now:*
+    *{0}:* {1} {2} {3}
+    """.format(city,
+               now_temp,
+               now_emoji,
+               now_comment))
+
+    message = "\n".join([k.strip() for k in message.split('\n')])
+
+    bot.send_message(chat_id=update.message.chat_id,
+                     parse_mode="markdown", text=message)
 
 
 def weather(bot, update, args):
@@ -573,6 +640,7 @@ dispatcher.add_handler(CommandHandler('start', start))
 dispatcher.add_handler(CommandHandler('info', start))
 dispatcher.add_handler(CommandHandler('weather', weather, pass_args=True))
 dispatcher.add_handler(CommandHandler('w', weather, pass_args=True))
+dispatcher.add_handler(CommandHandler('nw', nweather, pass_args=True))
 dispatcher.add_handler(CommandHandler('wset', wset, pass_args=True))
 dispatcher.add_handler(CommandHandler('ibash', ibash, pass_args=True))
 dispatcher.add_handler(CommandHandler('loglist', loglist, pass_args=True))
