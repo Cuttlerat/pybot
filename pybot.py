@@ -104,13 +104,13 @@ def weather(bot, update, args):
 
     try:
         owm = pyowm.OWM(WEATHER_TOKEN, language='en')
-    except pyowm.exceptions.unauthorized_error.UnauthorizedError:
+    except:
         error_message = "Invalid API token"
         bot.send_message(chat_id=update.message.chat_id, text=error_message)
         log_dict = {'timestamp': log_timestamp(),
                     'error_message': error_message,
                     'username': update.message.from_user.username}
-        print("{timestamp}: \"{error_message}\" by @{username}".format(**log_dict))
+        print("{timestamp}: Weather \"{error_message}\" by @{username}".format(**log_dict))
         return
 
 
@@ -143,16 +143,13 @@ def weather(bot, update, args):
 
     # Tomorrow
     for i in range(6, 19, 6):
-        tomorrow[i] = pyowm.timeutils.tomorrow(i, 0)
-
-        for j in tomorrow:
-            weather = fc.get_weather_at(tomorrow[j])
+            weather = fc.get_weather_at(pyowm.timeutils.tomorrow(i, 0))
             temp = str(round(weather.get_temperature('celsius')["temp"]))
             if temp[0] != '-':
-                weathers["tomorrow", "temp", j] = '+' + temp
-            weathers["tomorrow", "emoji", j] = get_emoji(weather.get_status())
+                weathers["tomorrow", "temp", i] = '+' + temp
+            weathers["tomorrow", "emoji", i] = get_emoji(weather.get_status())
             status = weather.get_detailed_status()
-            weathers["tomorrow", "status", j] = status[0].upper() + status[1:]
+            weathers["tomorrow", "status", i] = status[0].upper() + status[1:]
 
     now_temp = str(round(w.get_temperature(unit='celsius')["temp"]))
     if now_temp[0] != '-':
