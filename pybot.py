@@ -102,7 +102,7 @@ def weather(bot, update, args):
                                      parse_mode='markdown', text=error_message)
                     return
 
-    owm = pyowm.OWM(W_API_TOKEN, language='en')
+    owm = pyowm.OWM(WEATHER_TOKEN, language='en')
 
     try:
         observation = owm.weather_at_place(city)
