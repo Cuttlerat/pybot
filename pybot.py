@@ -349,6 +349,7 @@ def parser(bot, update):
                     usernames = ses.query(pingers.username).filter(
                         and_(
                             pingers.username.notin_(usernames),
+                            pingers.username != username,
                             or_(
                                 pingers.chat_id == chat_id,
                                 pingers.chat_id == "all")
