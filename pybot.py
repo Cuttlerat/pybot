@@ -46,42 +46,26 @@ def start(bot, update):
 # ==== End of start function =================================================
 
 
-def get_emoji(emoji_code):
+def get_emoji(weather_status):
 
     emojis = {
-        # Sunny
-        '☀️':  [113],
-        # Partly cloudy
-        '⛅️': [116],
-        # Cloudy
-        '🌥': [119],
-        # Overcast
-        '☁️':  [122],
-        # Thunder
-        '🌩': [200],
-        # Fog
-        '🌫': [143, 248, 260],
-        # Light Rain
-        '🌦': [176, 263, 266, 281,
-              293, 296, 299, 302,
-              311, 317, 353, 362],
-        # Snow
-        '🌨': [179, 182, 185, 227,
-              230, 323, 326, 329,
-              332, 335, 338, 350,
-              368, 371, 374, 377],
-        # Heavy rain
-        '🌧': [284, 305, 308, 314,
-              320, 356, 359, 365],
-        # Rain with thunder
-        '⛈':  [386, 389, 392, 395]
+            'Clouds': u'\U00002601',
+            'Clear': u'\U00002600',
+            'Rain': u'\U0001F328',
+            'Extreme': u'\U0001F32A',
+            'Snow': u'\U0001F328',
+            'Thunderstorm': u'\U000026C8',
+            'Mist': u'\U0001F32B',
+            'Haze': u'\U0001F324',
+            'notsure': u'\U0001F648'
     }
 
-    return("".join([i for i in emojis if emoji_code in [x for x in emojis[i]]]))
+    return("".join([emojis[i] for i in emojis if weather_status == i]))
 
 # ==== End of get_emoji function =============================================
 
-def nweather(bot, update, args):
+
+def weather(bot, update, args):
 
     city = " ".join(args)
     username = update.message.from_user.username
@@ -118,10 +102,22 @@ def nweather(bot, update, args):
                                      parse_mode='markdown', text=error_message)
                     return
 
-    owm = pyowm.OWM(W_API_TOKEN, language='ru')
-    observation = owm.weather_at_place(city)
+    owm = pyowm.OWM(W_API_TOKEN, language='en')
+
+    try:
+        observation = owm.weather_at_place(city)
+    except pyowm.exceptions.not_found_error.NotFoundError:
+        error_message = "Wrong location"
+        bot.send_message(chat_id=update.message.chat_id, text=error_message)
+        log_dict = {'timestamp': log_timestamp(),
+                    'error_message': error_message,
+                    'username': update.message.from_user.username}
+        print("{timestamp}: \"{error_message}\" by @{username}".format(**log_dict))
+        return
+
     fc = owm.three_hours_forecast(city)
     w = observation.get_weather()
+    city = observation.get_location().get_name()
 
     weathers, tomorrow = {}, {}
 
@@ -131,32 +127,35 @@ def nweather(bot, update, args):
     temp = str(round(weather.get_temperature(unit='celsius')["temp"]))
     if temp[0] != '-':
         weathers["today", "temp", 0] = '+' + temp
-    weathers["today", "emoji", 0] = weather.get_weather_icon_name()
-    weathers["today", "status", 0] = weather.get_detailed_status()
+    weathers["today", "emoji", 0] = get_emoji(weather.get_status())
+    status = weather.get_detailed_status()
+    weathers["today", "status", 0] = status[0].upper() + status[1:]
 
     # Tomorrow
-    for i in range(6,19,6):
+    for i in range(6, 19, 6):
         tomorrow[i] = pyowm.timeutils.tomorrow(i, 0)
 
         for j in tomorrow:
             weather = fc.get_weather_at(tomorrow[j])
-            temp = str(round(weather.get_temperature(unit='celsius')["temp"]))
+            temp = str(round(weather.get_temperature('celsius')["temp"]))
             if temp[0] != '-':
                 weathers["tomorrow", "temp", j] = '+' + temp
-            weathers["tomorrow", "emoji", j] = weather.get_weather_icon_name()
-            weathers["tomorrow", "status", j] = weather.get_detailed_status()
+            weathers["tomorrow", "emoji", j] = get_emoji(weather.get_status())
+            status = weather.get_detailed_status()
+            weathers["tomorrow", "status", j] = status[0].upper() + status[1:]
 
     now_temp = str(round(w.get_temperature(unit='celsius')["temp"]))
     if now_temp[0] != '-':
         now_temp = '+' + now_temp
     now_status = w.get_detailed_status()
-    now_emoji = w.get_weather_icon_name()
+    now_status = now_status[0].upper() + now_status[1:]
+    now_emoji = get_emoji(w.get_status())
 
     message = ''.join("""
     *Now:*
     *{0}:* {1} {2} {3}
 
-    *In the near future:*
+    *In three hours:*
     {4} {5} {6}
 
     *Tomorrow:*
@@ -174,133 +173,10 @@ def nweather(bot, update, args):
     bot.send_message(chat_id=update.message.chat_id,
                      parse_mode="markdown", text=message)
 
-
-def weather(bot, update, args):
-
-    city = "".join(args)
-    username = update.message.from_user.username
-
-    engine = create_engine(DATABASE)
-    Base = automap_base()
-    Base.prepare(engine, reflect=True)
-
-    locations = Base.classes.locations
-
-    if not city:
-        with conn(engine) as ses:
-            try:
-                city = ses.query(locations.city).filter(
-                    locations.username == username).one()
-                city = [i for i in city]
-            except NoResultFound:
-                try:
-                    city = ses.query(locations.city).filter(
-                        locations.username == "default_city").one()
-                    city = [i for i in city]
-                except NoResultFound:
-                    if username in ADMINS:
-                        error_message = '''
-                        You didn't set the default city
-                        You can add default city by this command:
-                        `/manage insert into locations(username,city) \
-                        values(\"default_city\",\"YOUR CITY HERE\")`'''
-                        error_message = "\n".join(
-                            [i.strip() for i in error_message.split('\n')])
-                    else:
-                        error_message = "Administrator didn't set the default city\nTry /w City"
-                    bot.send_message(chat_id=update.message.chat_id,
-                                     parse_mode='markdown', text=error_message)
-                    return
-
-    w_params = {'q': city,
-                'key': WEATHER_TOKEN,
-                'format': 'json',
-                'date': 'today',
-                'fx24': 'yes',
-                'lang': 'ru'}
-
-    weather_api_bug = False
-
-    now_city = ""
-    while not now_city or now_city == "null":
-        try:
-            w_response = requests.get(
-                'https://api.worldweatheronline.com/premium/v1/weather.ashx', w_params).json()
-            now_city = w_response["data"]["request"][0]["query"]
-        except (KeyError, json.decoder.JSONDecodeError):
-            now_city = ""
-        if (not now_city or now_city == "null") and weather_api_bug:
-            break
-        if (not now_city or now_city == "null"):
-            weather_api_bug = True
-
-    try:
-        now_temp = w_response["data"]["current_condition"][0]["temp_C"]
-        if now_temp[0] != '-':
-            now_temp = '+' + now_temp
-    except (KeyError, json.decoder.JSONDecodeError):
-        error_message = 'Wrong location!'
-
-        bot.send_message(chat_id=update.message.chat_id, text=error_message)
-
-        log_dict = {'timestamp': log_timestamp(),
-                    'error_message': "Wrong location",
-                    'username': update.message.from_user.username}
-        print("{timestamp}: \"{error_message}\" by @{username}".format(**log_dict))
-        return
-
-    now_comment = w_response["data"]["current_condition"][0]["lang_ru"][0]["value"]
-
-    now_time = datetime.strptime(
-        w_response["data"]["current_condition"][0]["observation_time"] + " 2017", '%I:%M %p %Y')
-    now_time = pytz.timezone('Europe/Moscow').fromutc(now_time)
-    now_time = "{:%H:%M}".format(now_time)
-    now_emoji = get_emoji(
-        int(w_response["data"]["current_condition"][0]["weatherCode"]))
-
-    weather = {}
-    for j in range(2):
-        for i in range(3):
-            weather[j, "temp",
-                    i] = w_response["data"]["weather"][j]["hourly"][2 + (i * 3)]["tempC"]
-            if weather[j, "temp", i][0] != '-':
-                weather[j, "temp", i] = '+' + weather[j, "temp", i]
-            weather[j, "emoji", i] = get_emoji(
-                int(w_response["data"]["weather"][j]["hourly"][2 + (i * 3)]["weatherCode"]))
-            weather[j, "comment", i] = w_response["data"]["weather"][j]["hourly"][2 +
-                                                                                  (i * 3)]["lang_ru"][0]["value"]
-
-    message = ''.join("""
-    *Now:*
-    *[{0}]:* {1} {2} {3}
-    {4}
-
-    *Today:*
-    *Morning:* {5} {6} {7}
-    *Noon:* {8} {9} {10}
-    *Evening:* {11} {12} {13}
-
-    *Tomorrow:*
-    *Morning:* {14} {15} {16}
-    *Noon:* {17} {18} {19}
-    *Evening:* {20} {21} {22}
-    """.format(now_time,
-               now_temp,
-               now_emoji,
-               now_comment,
-               now_city,
-               *[weather[i] for i in weather]))
-
-    message = "\n".join([k.strip() for k in message.split('\n')])
-
-    bot.send_message(chat_id=update.message.chat_id,
-                     parse_mode="markdown", text=message)
-
-    # LOG
     log_dict = {'timestamp': log_timestamp(),
-                'message': "Weather {0}".format(now_city),
-                'username': update.message.from_user.username}
-    print("{timestamp}: \"{message}\" by @{username}".format(**log_dict))
+                'city': city,
+                'username': username}
+    print("{timestamp}: Weather \"{city}\" by @{username}".format(**log_dict))
 
 # ==== End of weather function ===============================================
 
@@ -668,7 +544,6 @@ dispatcher.add_handler(CommandHandler('start', start))
 dispatcher.add_handler(CommandHandler('info', start))
 dispatcher.add_handler(CommandHandler('weather', weather, pass_args=True))
 dispatcher.add_handler(CommandHandler('w', weather, pass_args=True))
-dispatcher.add_handler(CommandHandler('nw', nweather, pass_args=True))
 dispatcher.add_handler(CommandHandler('wset', wset, pass_args=True))
 dispatcher.add_handler(CommandHandler('ibash', ibash, pass_args=True))
 dispatcher.add_handler(CommandHandler('loglist', loglist, pass_args=True))
