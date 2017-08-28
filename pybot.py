@@ -285,7 +285,7 @@ def loglist(bot, update, args):
 
 def parser(bot, update):
 
-    in_text = update.message.text.lower().replace('ё', 'е')
+    in_text = update.message.text.lower().replace('ё', 'е').replace(',', '').replace('.', '')
     engine = create_engine(DATABASE)
     Base = automap_base()
     Base.prepare(engine, reflect=True)
@@ -304,9 +304,9 @@ def parser(bot, update):
             ses.query(google_ignore.ignore).filter(
                 google_ignore.ignore.in_(in_text.split())).one()
         except NoResultFound:
-            g_in_text = in_text.replace(",", "").replace(".", "")
+            g_in_text = in_text.replace("?", "")
             matches = ses.query(google.match).filter(
-                literal(in_text).contains(google.match)).all()
+                literal(in_text).like(google.match + '%')).all()
             matches = [i for i in matches for i in i]
             if matches:
                 g_in_text = g_in_text.replace(
