@@ -102,7 +102,17 @@ def weather(bot, update, args):
                                      parse_mode='markdown', text=error_message)
                     return
 
-    owm = pyowm.OWM(WEATHER_TOKEN, language='en')
+    try:
+        owm = pyowm.OWM(WEATHER_TOKEN, language='en')
+    except pyowm.exceptions.unauthorized_error.UnauthorizedError:
+        error_message = "Invalid API token"
+        bot.send_message(chat_id=update.message.chat_id, text=error_message)
+        log_dict = {'timestamp': log_timestamp(),
+                    'error_message': error_message,
+                    'username': update.message.from_user.username}
+        print("{timestamp}: \"{error_message}\" by @{username}".format(**log_dict))
+        return
+
 
     try:
         observation = owm.weather_at_place(city)
