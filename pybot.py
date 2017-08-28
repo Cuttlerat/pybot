@@ -558,13 +558,16 @@ dispatcher.add_handler(CommandHandler('manage', manage, pass_args=True))
 dispatcher.add_handler(CommandHandler('pinger', pinger, pass_args=True))
 dispatcher.add_handler(MessageHandler(Filters.text, parser))
 
-if MODE.lower() == 'production':
-    updater.start_webhook(listen="0.0.0.0",
-    		          port=PORT,
-    		          url_path=BOT_TOKEN,
-    		          webhook_url=WEBHOOK_URL)
-    updater.idle()
-else:
-    updater.start_polling()
+try:
+    if MODE.lower() == 'production':
+        updater.start_webhook(listen="0.0.0.0",
+                              port=PORT,
+                              url_path=BOT_TOKEN,
+                              webhook_url=WEBHOOK_URL)
+        updater.idle()
+    else:
+        updater.start_polling()
+except sqlite3.ProgrammingError:
+    pass
 
 # vim: set fdm=marker:
