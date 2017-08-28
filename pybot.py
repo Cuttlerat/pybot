@@ -445,7 +445,7 @@ def pinger(bot, update, args):
     if update.message.from_user.username in ADMINS:
         try:
             username = command[0]
-            match = " ".join(command[1:])
+            match = command[1].lower()
             if not username: raise
         except:
             out_text = "Usage `/pinger username match`"
@@ -468,7 +468,7 @@ def pinger(bot, update, args):
                 elif username == "delete":
                     try:
                         username = command[1]
-                        delete_match = command[2]
+                        delete_match = command[2].lower()
                     except:
                         out_text = "Usage `/pinger delete username match`"
                         bot.send_message(chat_id=update.message.chat_id,
@@ -512,7 +512,7 @@ def pinger(bot, update, args):
     else:
         try:
             try:
-                user_match = command[0]
+                user_match = command[0].lower()
                 if not user_match: raise
             except:
                 out_text = "Usage: \n`/pinger match`\n`/pinger all`\n`/pinger delete match`"
@@ -535,7 +535,7 @@ def pinger(bot, update, args):
                                      text=out_text)
                 elif user_match == "delete":
                     try:
-                        delete_match = command[1]
+                        delete_match = command[1].lower()
                     except:
                         out_text = "Usage `/pinger delete match`"
                         bot.send_message(chat_id=update.message.chat_id,
