@@ -7,7 +7,7 @@ This is my first telegram bot written in Python
 ```
 /weather <City>     - Weather in a city for now, today and tommorow
 /w <City>           - Short form of /w
-/info               - Information about this bot  
+/info               - Information about this bot
 /wset <City>        - Set default city for /weather
 /ibash <Number>     - Random quote from ibash.org.ru
 /loglist <Number>   - Random quote from loglist.net
@@ -42,7 +42,7 @@ Then just launch the bot
 In order to build and create a docker container, `docker-compose` must be installed in your system
 
 ```bash
-docker-compose up --build pybot 
+docker-compose up --build pybot
 ```
 
 You can get a weather token here: http://openweathermap.org/ <br>
