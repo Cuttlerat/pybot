@@ -395,7 +395,7 @@ def manage(bot, update, args):
 
     if update.message.from_user.username not in ADMINS:
         out_text = "You are not an administrator. The incident will be reported"
-        commans = "not an administrator"
+        command = "not an administrator"
     else:
         command = " ".join(args)
 
@@ -433,45 +433,157 @@ def manage(bot, update, args):
 
 def pinger(bot, update, args):
 
+    chat_id = update.message.chat_id
+    command = " ".join(args).split(' ')
+
+    engine = create_engine(DATABASE)
+    Base = automap_base()
+    Base.prepare(engine, reflect=True)
+    pingers = Base.classes.pingers
+
     if update.message.from_user.username in ADMINS:
-        chat_id = update.message.chat_id
-        command = " ".join(args).split(' ')
-        username = command[0]
-        match = " ".join(command[1:])
-
-        engine = create_engine(DATABASE)
-        Base = automap_base()
-        Base.prepare(engine, reflect=True)
-        pingers = Base.classes.pingers
-
         try:
-            with conn(engine) as ses:
-                new_pinger = pingers(
-                    username=username,
-                    match=match,
-                    chat_id=chat_id)
-                ses.add(new_pinger)
+            username = command[0]
+            match = " ".join(command[1:])
+            if not username: raise
+        except:
+            out_text = "Usage `/pinger username match`"
             bot.send_message(chat_id=update.message.chat_id,
-                             text="Successfuly added")
+                             parse_mode='markdown',
+                             text=out_text)
             log_dict = {'timestamp': log_timestamp(),
-                        'command': " ".join(command),
                         'username': update.message.from_user.username}
-            print(
-                '{timestamp}: Added pinger "{command}" by @{username}'.format(**log_dict))
+            print('{timestamp}: Pinger usage by @{username}'.format(**log_dict))
+            return
+        with conn(engine) as ses:
+            try:
+                if username == "all":
+                    all_matches = ses.query(pingers).filter(pingers.chat_id == chat_id).all()
+                    out_text = ""
+                    for match in all_matches:
+                        out_text += "\n{} | {}".format(match.username, match.match)
+                    bot.send_message(chat_id=update.message.chat_id,
+                                     text=out_text)
+                elif username == "delete":
+                    try:
+                        username = command[1]
+                        delete_match = command[2]
+                    except:
+                        out_text = "Usage `/pinger delete username match`"
+                        bot.send_message(chat_id=update.message.chat_id,
+                                         parse_mode='markdown',
+                                         text=out_text)
+                        log_dict = {'timestamp': log_timestamp(),
+                                    'username': update.message.from_user.username}
+                        print('{timestamp}: Delete usage by @{username}'.format(**log_dict))
+                        return
+                    ses.query(pingers).filter(and_(
+                           pingers.chat_id == chat_id,
+                           pingers.username == username,
+                           pingers.match == delete_match)).delete()
+                    bot.send_message(chat_id=update.message.chat_id,
+                                     text="Deleted")
+                    log_dict = {'timestamp': log_timestamp(),
+                                'command': " ".join(command),
+                                'username': update.message.from_user.username}
+                    print('{timestamp}: Delete pinger "{command}" by @{username}'.format(**log_dict))
+                else:
+                    with conn(engine) as ses:
+                        new_pinger = pingers(
+                            username=username,
+                            match=match,
+                            chat_id=chat_id)
+                        ses.add(new_pinger)
+                    bot.send_message(chat_id=update.message.chat_id,
+                                     text="Successfuly added")
+                    log_dict = {'timestamp': log_timestamp(),
+                                'command': " ".join(command),
+                                'username': update.message.from_user.username}
+                    print(
+                        '{timestamp}: Added pinger "{command}" by @{username}'.format(**log_dict))
+            except:
+                bot.send_message(chat_id=update.message.chat_id,
+                                 text="There was some trouble")
+                log_dict = {'timestamp': log_timestamp(),
+                            'command': " ".join(command),
+                            'username': update.message.from_user.username}
+                print('{timestamp}: Error while add pinger "{command}" by @{username}'.format(**log_dict))
+    else:
+        try:
+            try:
+                user_match = command[0]
+                if not user_match: raise
+            except:
+                out_text = "Usage: \n`/pinger match`\n`/pinger all`\n`/pinger delete match`"
+                bot.send_message(chat_id=update.message.chat_id,
+                                 parse_mode='markdown',
+                                 text=out_text)
+                log_dict = {'timestamp': log_timestamp(),
+                            'username': update.message.from_user.username}
+                print('{timestamp}: Pinger usage by @{username}'.format(**log_dict))
+                return
+            with conn(engine) as ses:
+                if user_match == "all":
+                    all_matches = ses.query(pingers).filter(and_(
+                                  pingers.chat_id == chat_id,
+                                  pingers.username == update.message.from_user.username)).all()
+                    out_text = ""
+                    for match in all_matches:
+                        out_text += "\n{} | {}".format(match.username, match.match)
+                    bot.send_message(chat_id=update.message.chat_id,
+                                     text=out_text)
+                elif user_match == "delete":
+                    try:
+                        delete_match = command[1]
+                    except:
+                        out_text = "Usage `/pinger delete match`"
+                        bot.send_message(chat_id=update.message.chat_id,
+                                         parse_mode='markdown',
+                                         text=out_text)
+                        log_dict = {'timestamp': log_timestamp(),
+                                    'username': update.message.from_user.username}
+                        print('{timestamp}: Delete usage by @{username}'.format(**log_dict))
+                        return
+                    ses.query(pingers).filter(and_(
+                              pingers.chat_id == chat_id,
+                              pingers.username == update.message.from_user.username,
+                              pingers.match == delete_match)).delete()
+                    bot.send_message(chat_id=update.message.chat_id,
+                                     text="Deleted")
+                    log_dict = {'timestamp': log_timestamp(),
+                                'command': " ".join(command),
+                                'username': update.message.from_user.username}
+                    print('{timestamp}: Delete pinger "{command}" by @{username}'.format(**log_dict))
+
+                else:
+                    count = ses.query(pingers).filter(and_(
+                                pingers.chat_id == chat_id,
+                                pingers.username == update.message.from_user.username)).count()
+                    if count < 10:
+                        new_pinger = pingers(
+                            username=update.message.from_user.username,
+                            match=user_match,
+                            chat_id=chat_id)
+                        ses.add(new_pinger)
+                        bot.send_message(chat_id=update.message.chat_id,
+                                         text="Successfuly added")
+                        log_dict = {'timestamp': log_timestamp(),
+                                    'command': " ".join(command),
+                                    'username': update.message.from_user.username}
+                        print('{timestamp}: Added pinger "{command}" by @{username}'.format(**log_dict))
+                    else:
+                        bot.send_message(chat_id=update.message.chat_id,
+                                         text="You can add only 10 matches")
+                        log_dict = {'timestamp': log_timestamp(),
+                                    'username': update.message.from_user.username}
+                        print('{timestamp}: Pinger limit is settled by @{username}'.format(**log_dict))
         except:
             bot.send_message(chat_id=update.message.chat_id,
                              text="There was some trouble")
             log_dict = {'timestamp': log_timestamp(),
                         'command': " ".join(command),
                         'username': update.message.from_user.username}
-            print('{timestamp}: Error while add pinger "{command}" by @{username}'.format(
-                **log_dict))
-    else:
-        bot.send_message(chat_id=update.message.chat_id,
-                         text="You are not an administrator")
-        log_dict = {'timestamp': log_timestamp(),
-                    'username': update.message.from_user.username}
-        print('{timestamp}: Trying to pinger by @{username}'.format(**log_dict))
+            print('{timestamp}: Error while add pinger "{command}" by @{username}'.format(**log_dict))
 
 # ==== End of pinger function ================================================
 
