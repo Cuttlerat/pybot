@@ -43,7 +43,7 @@ In order to build and create a docker container, `docker-compose` must be instal
 docker-compose up --build pybot 
 ```
 
-You can get a weather token here: https://www.worldweatheronline.com/ <br>
+You can get a weather token here: http://openweathermap.org/ <br>
 Register your bot here: https://t.me/BotFather
 
 ## How to /manage database
