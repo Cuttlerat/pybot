@@ -558,6 +558,13 @@ dispatcher.add_handler(CommandHandler('manage', manage, pass_args=True))
 dispatcher.add_handler(CommandHandler('pinger', pinger, pass_args=True))
 dispatcher.add_handler(MessageHandler(Filters.text, parser))
 
-updater.start_polling()
+if MODE.lower() == 'production': 
+    updater.start_webhook(listen="0.0.0.0",
+    		          port=PORT,
+    		          url_path=BOT_TOKEN,
+    		          webhook_url=WEBHOOK_URL)
+    updater.idle()
+else:
+    updater.start_polling()
 
 # vim: set fdm=marker:
