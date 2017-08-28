@@ -51,7 +51,7 @@ def get_emoji(weather_status):
     emojis = {
             'Clouds': u'\U00002601',
             'Clear': u'\U00002600',
-            'Rain': u'\U0001F328',
+            'Rain': u'\U0001F327',
             'Extreme': u'\U0001F32A',
             'Snow': u'\U0001F328',
             'Thunderstorm': u'\U000026C8',
@@ -558,7 +558,7 @@ dispatcher.add_handler(CommandHandler('manage', manage, pass_args=True))
 dispatcher.add_handler(CommandHandler('pinger', pinger, pass_args=True))
 dispatcher.add_handler(MessageHandler(Filters.text, parser))
 
-if MODE.lower() == 'production': 
+if MODE.lower() == 'production':
     updater.start_webhook(listen="0.0.0.0",
     		          port=PORT,
     		          url_path=BOT_TOKEN,
