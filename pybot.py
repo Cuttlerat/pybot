@@ -328,7 +328,9 @@ def parser(bot, update):
 
     with conn(engine) as ses:
         in_text_list = in_text.split()
+        username = update.message.from_user.username
         chat_id = update.message.chat_id
+
         try:
             ses.query(ping_phrases.phrase).filter(
                 ping_phrases.phrase.in_(in_text_list)).one()
@@ -357,6 +359,7 @@ def parser(bot, update):
                     usernames = ses.query(pingers.username).filter(
                         and_(
                             pingers.username != 'EVERYONE GET IN HERE',
+                            pingers.username != username,
                             or_(
                                 pingers.chat_id == chat_id,
                                 pingers.chat_id == "all")
