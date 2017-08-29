@@ -608,7 +608,7 @@ dispatcher.add_handler(CommandHandler('pinger', pinger, pass_args=True))
 dispatcher.add_handler(MessageHandler(Filters.text, parser))
 
 try:
-    if MODE.lower() == 'production':
+    if MODE.lower() == 'webhook':
         updater.start_webhook(listen="0.0.0.0",
                               port=PORT,
                               url_path=BOT_TOKEN,
