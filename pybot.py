@@ -223,47 +223,36 @@ def wset(bot, update, args):
     bot.send_message(chat_id=update.message.chat_id, text=out_text)
     log_print('Wset "{0}"'.format(out_text))
 
+# ==== End of wset function ===============================================
 
-def ibash(bot, update, args):
 
+def quote(bot, update, args):
+
+    command = update.message.text.split()[0].replace('/', '')
     count = int(''.join(args)) if ''.join(args).isdigit() else 1
     if count > 5:
         count = 5
 
     for i in range(count):
-        i_response = requests.get('http://ibash.org.ru/random.php').text
-        soup = BeautifulSoup(i_response, "html.parser")
+        if command == "loglist":
+            l_raw_json = json.loads(requests.get(
+                'https://loglist.net/api/quote/random').text)
+            quote_id = l_raw_json['id']
+            quote_text = l_raw_json['content']
+            bot.send_message(chat_id=update.message.chat_id, text="#" +
+                             quote_id + "\n" + quote_text + "\n", disable_web_page_preview=1)
+        elif command == "ibash":
+            i_response = requests.get('http://ibash.org.ru/random.php').text
+            soup = BeautifulSoup(i_response, "html.parser")
+            quote_id = soup.find_all("div", class_="quote")[0].a.get_text()
+            for br in soup.find_all("br"):
+                br.replace_with("\n")
+            quote_text = soup.find("div", class_="quotbody").text
+            bot.send_message(chat_id=update.message.chat_id, text=quote_id +
+                             "\n" + quote_text + "\n", disable_web_page_preview=1)
+    log_print("{0} {1}".format(command, count), update.message.from_user.username)
 
-        quote_id = soup.find_all("div", class_="quote")[0].a.get_text()
-        for br in soup.find_all("br"):
-            br.replace_with("\n")
-        quote_text = soup.find("div", class_="quotbody").text
-        bot.send_message(chat_id=update.message.chat_id, text=quote_id +
-                         "\n" + quote_text + "\n", disable_web_page_preview=1)
-
-    log_print("ibash {0}".format(count), update.message.from_user.username)
-
-# ==== End of ibash function =================================================
-
-
-def loglist(bot, update, args):
-
-    # TODO Merge into one function with ibash
-    #     I need help with getting a what command was in message inside function to do that
-    count = int(''.join(args)) if ''.join(args).isdigit() else 1
-    if count > 5:
-        count = 5
-
-    for i in range(count):
-        l_raw_json = json.loads(requests.get(
-            'https://loglist.net/api/quote/random').text)
-        quote_id = l_raw_json['id']
-        quote_text = l_raw_json['content']
-        bot.send_message(chat_id=update.message.chat_id, text="#" +
-                         quote_id + "\n" + quote_text + "\n", disable_web_page_preview=1)
-    log_print("Loglist {0}".format(count), update.message.from_user.username)
-
-# ==== End of loglist function ===============================================
+# ==== End of quote function ===============================================
 
 
 def parser(bot, update):
@@ -576,6 +565,8 @@ def create_table():
 
     metadata.create_all()
 
+# ==== End of create_table function ===============================================
+
 def log_print(message, *username):
     timestamp = datetime.now(tzlocal()).strftime("[%d/%b/%Y:%H:%M:%S %z]")
     if not username:
@@ -608,13 +599,10 @@ create_table()
 updater = Updater(token=BOT_TOKEN)
 dispatcher = updater.dispatcher
 
-dispatcher.add_handler(CommandHandler('start', start))
-dispatcher.add_handler(CommandHandler('info', start))
-dispatcher.add_handler(CommandHandler('weather', weather, pass_args=True))
-dispatcher.add_handler(CommandHandler('w', weather, pass_args=True))
+dispatcher.add_handler(CommandHandler(['start', 'info'], start))
+dispatcher.add_handler(CommandHandler(['weather', 'w'], weather, pass_args=True))
 dispatcher.add_handler(CommandHandler('wset', wset, pass_args=True))
-dispatcher.add_handler(CommandHandler('ibash', ibash, pass_args=True))
-dispatcher.add_handler(CommandHandler('loglist', loglist, pass_args=True))
+dispatcher.add_handler(CommandHandler(['ibash', 'loglist'], quote, pass_args=True))
 dispatcher.add_handler(CommandHandler('manage', manage, pass_args=True))
 dispatcher.add_handler(CommandHandler('pinger', pinger, pass_args=True))
 dispatcher.add_handler(MessageHandler(Filters.text, parser))
