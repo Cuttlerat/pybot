@@ -250,6 +250,13 @@ def quote(bot, update, args):
             quote_text = soup.find("div", class_="quotbody").text
             bot.send_message(chat_id=update.message.chat_id, text=quote_id +
                              "\n" + quote_text + "\n", disable_web_page_preview=1)
+        elif command == "cat":
+            try:
+                cat_url = requests.get('http://thecatapi.com/api/images/get?').url
+            except requests.exceptions.ConnectionError:
+                i-=1
+            bot.send_photo(chat_id=update.message.chat_id, photo=cat_url)
+
     log_print("{0} {1}".format(command, count), update.message.from_user.username)
 
 # ==== End of quote function ===============================================
@@ -602,7 +609,7 @@ dispatcher = updater.dispatcher
 dispatcher.add_handler(CommandHandler(['start', 'info'], start))
 dispatcher.add_handler(CommandHandler(['weather', 'w'], weather, pass_args=True))
 dispatcher.add_handler(CommandHandler('wset', wset, pass_args=True))
-dispatcher.add_handler(CommandHandler(['ibash', 'loglist'], quote, pass_args=True))
+dispatcher.add_handler(CommandHandler(['ibash', 'loglist', 'cat'], quote, pass_args=True))
 dispatcher.add_handler(CommandHandler('manage', manage, pass_args=True))
 dispatcher.add_handler(CommandHandler('pinger', pinger, pass_args=True))
 dispatcher.add_handler(MessageHandler(Filters.text, parser))
