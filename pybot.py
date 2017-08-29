@@ -13,6 +13,8 @@ import pyowm
 
 from bs4 import BeautifulSoup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 from contextlib import contextmanager
 from datetime import datetime
 from sqlalchemy import *
@@ -253,10 +255,16 @@ def quote(bot, update, args):
             bot.send_message(chat_id=update.message.chat_id, text=quote_id +
                              "\n" + quote_text + "\n", disable_web_page_preview=1)
         elif command == "cat":
-            try:
-                cat_url = requests.get('http://thecatapi.com/api/images/get?').url
-            except requests.exceptions.ConnectionError:
-                i-=1
+            cat_url = ""
+            max_retries = 3
+            retries = 0
+            while not cat_url and retries < max_retries:
+                try:
+                    cat_url = requests.get('http://thecatapi.com/api/images/get?').url
+                except requests.exceptions.ConnectionError:
+                    pass
+                finally:
+                    retries += 1
             bot.send_photo(chat_id=update.message.chat_id, photo=cat_url)
         elif command == "dog":
             dog_url = requests.get('https://dog.ceo/api/breeds/image/random').json()["message"]
