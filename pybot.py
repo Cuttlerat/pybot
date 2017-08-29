@@ -260,7 +260,8 @@ def quote(bot, update, args):
             bot.send_photo(chat_id=update.message.chat_id, photo=cat_url)
         elif command == "dog":
             dog_url = requests.get('https://dog.ceo/api/breeds/image/random').json()["message"]
-            bot.send_photo(chat_id=update.message.chat_id, photo=dog_url)
+            dog_breed = dog_url.split('/')[-2].title()
+            bot.send_photo(chat_id=update.message.chat_id, photo=dog_url, caption=dog_breed)
 
     log_print("{0} {1}".format(command, count), update.message.from_user.username)
 
