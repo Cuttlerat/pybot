@@ -258,7 +258,7 @@ def quote(bot, update, args):
             cat_url = ""
             max_retries = 3
             retries = 0
-            while not cat_url and retries < max_retries:
+            while not cat_url or retries < max_retries:
                 try:
                     cat_url = requests.get('http://thecatapi.com/api/images/get?').url
                 except requests.exceptions.ConnectionError:
