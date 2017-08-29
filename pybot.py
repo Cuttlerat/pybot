@@ -258,6 +258,9 @@ def quote(bot, update, args):
             except requests.exceptions.ConnectionError:
                 i-=1
             bot.send_photo(chat_id=update.message.chat_id, photo=cat_url)
+        elif command == "dog":
+            dog_url = requests.get('https://dog.ceo/api/breeds/image/random').json()["message"]
+            bot.send_photo(chat_id=update.message.chat_id, photo=dog_url)
 
     log_print("{0} {1}".format(command, count), update.message.from_user.username)
 
@@ -611,7 +614,7 @@ dispatcher = updater.dispatcher
 dispatcher.add_handler(CommandHandler(['start', 'info'], start))
 dispatcher.add_handler(CommandHandler(['weather', 'w'], weather, pass_args=True))
 dispatcher.add_handler(CommandHandler('wset', wset, pass_args=True))
-dispatcher.add_handler(CommandHandler(['ibash', 'loglist', 'cat'], quote, pass_args=True))
+dispatcher.add_handler(CommandHandler(['ibash', 'loglist', 'cat', 'dog'], quote, pass_args=True))
 dispatcher.add_handler(CommandHandler('manage', manage, pass_args=True))
 dispatcher.add_handler(CommandHandler('pinger', pinger, pass_args=True))
 dispatcher.add_handler(MessageHandler(Filters.text, parser))
