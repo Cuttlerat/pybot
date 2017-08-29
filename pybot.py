@@ -606,20 +606,20 @@ def conn(engine):
 
 log_print('Started')
 
-create_table()
-
-updater = Updater(token=BOT_TOKEN)
-dispatcher = updater.dispatcher
-
-dispatcher.add_handler(CommandHandler(['start', 'info'], start))
-dispatcher.add_handler(CommandHandler(['weather', 'w'], weather, pass_args=True))
-dispatcher.add_handler(CommandHandler('wset', wset, pass_args=True))
-dispatcher.add_handler(CommandHandler(['ibash', 'loglist', 'cat', 'dog'], quote, pass_args=True))
-dispatcher.add_handler(CommandHandler('manage', manage, pass_args=True))
-dispatcher.add_handler(CommandHandler('pinger', pinger, pass_args=True))
-dispatcher.add_handler(MessageHandler(Filters.text, parser))
-
 try:
+    create_table()
+
+    updater = Updater(token=BOT_TOKEN)
+    dispatcher = updater.dispatcher
+
+    dispatcher.add_handler(CommandHandler(['start', 'info'], start))
+    dispatcher.add_handler(CommandHandler(['weather', 'w'], weather, pass_args=True))
+    dispatcher.add_handler(CommandHandler('wset', wset, pass_args=True))
+    dispatcher.add_handler(CommandHandler(['ibash', 'loglist', 'cat', 'dog'], quote, pass_args=True))
+    dispatcher.add_handler(CommandHandler('manage', manage, pass_args=True))
+    dispatcher.add_handler(CommandHandler('pinger', pinger, pass_args=True))
+    dispatcher.add_handler(MessageHandler(Filters.text, parser))
+
     if MODE.lower() == 'webhook':
         updater.start_webhook(listen="0.0.0.0",
                               port=PORT,
