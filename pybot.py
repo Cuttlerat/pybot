@@ -618,8 +618,8 @@ try:
     if MODE.lower() == 'webhook':
         updater.start_webhook(listen="0.0.0.0",
                               port=PORT,
-                              url_path=BOT_TOKEN,
-                              webhook_url=WEBHOOK_URL)
+                              url_path=BOT_TOKEN)
+        updater.bot.set_webhook(WEBHOOK_URL)
         updater.idle()
     else:
         updater.start_polling()
