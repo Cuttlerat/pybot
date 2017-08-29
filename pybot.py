@@ -229,6 +229,8 @@ def wset(bot, update, args):
 def quote(bot, update, args):
 
     command = update.message.text.split()[0].replace('/', '')
+    if '@' in command:
+        command = command.split('@')[0]
     count = int(''.join(args)) if ''.join(args).isdigit() else 1
     if count > 5:
         count = 5
