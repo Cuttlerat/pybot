@@ -297,8 +297,9 @@ def parser(bot, update):
             phrase = "".join(ses.query(w_phrases.match).filter(
                 literal(in_text.lower()).contains(w_phrases.match)).one())
             weather(bot, update, in_text.lower()[in_text.lower().find(phrase)+len(phrase):].split())
-        except NoResultFound:
             return
+        except NoResultFound:
+            pass
 
     # ------------ Google -----------------
 
