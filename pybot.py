@@ -298,7 +298,7 @@ def parser(bot, update):
                 literal(in_text.lower()).contains(w_phrases.match)).one())
             weather(bot, update, in_text.lower()[in_text.lower().find(phrase)+len(phrase):].split())
         except NoResultFound:
-            pass
+            return
 
     # ------------ Google -----------------
 
