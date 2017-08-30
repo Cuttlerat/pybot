@@ -284,11 +284,21 @@ def parser(bot, update):
     Base.prepare(engine, reflect=True)
 
     answers = Base.classes.answers
+    w_phrases = Base.classes.w_phrases
     google_ignore = Base.classes.google_ignore
     google = Base.classes.google
     ping_phrases = Base.classes.ping_phrases
     ping_exclude = Base.classes.ping_exclude
     pingers = Base.classes.pingers
+
+    # ------------ Weather ----------------
+    with conn(engine) as ses:
+        try:
+            phrase = "".join(ses.query(w_phrases.match).filter(
+                literal(in_text.lower()).contains(w_phrases.match)).one())
+            weather(bot, update, in_text.lower()[in_text.lower().find(phrase)+len(phrase):].split())
+        except NoResultFound:
+            pass
 
     # ------------ Google -----------------
 
@@ -576,6 +586,9 @@ def create_table():
     locations = Table('locations', metadata,
                       Column('username', Unicode(255), primary_key=True),
                       Column('city', Unicode(255)))
+
+    w_phrases = Table('w_phrases', metadata,
+                      Column('match', Unicode(255), primary_key=True))
 
     answers = Table('answers', metadata,
                     Column('match', Unicode(255), primary_key=True),
