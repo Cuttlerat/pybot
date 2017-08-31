@@ -11,6 +11,10 @@ This is my first telegram bot written in Python
 /wset <City>        - Set default city for /weather
 /ibash <Number>     - Random quote from ibash.org.ru
 /loglist <Number>   - Random quote from loglist.net
+/cat <Number>       - Random cat photo from Tumbler
+/dog <Number>       - Random dog photo from dog.ceo
+/pinger             - Show usage of pinger command wich allow to
+                    + add ping phrases for user who call this command
 /manage <SQL query> - Manage your database (Only for admins)
 ```
 
