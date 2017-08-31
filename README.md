@@ -31,7 +31,7 @@ BOT_TOKEN = '<YOUR TOKEN>'
 WEATHER_TOKEN = '<YOUR TOKEN>'
 DATABASE_HOST = 'data/pybot.db'
 PORT=10000 # For example
-WEBHOOK_URL = 'https://pybot.example.com:{0}/{1}'.format(PORT, BOT_TOKEN)
+WEBHOOK_URL = 'https://pybot.example.com/{}'.format(BOT_TOKEN)
 ADMINS = [ 'YOUR TELEGRAM USERNAME WITHOUT @' ]
 ```
 
