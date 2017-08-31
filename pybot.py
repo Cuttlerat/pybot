@@ -265,7 +265,10 @@ def quote(bot, update, args):
                     pass
                 finally:
                     retries += 1
-            bot.send_photo(chat_id=update.message.chat_id, photo=cat_url)
+            if cat_url.split('.')[-1] == 'gif':
+                bot.send_document(chat_id=update.message.chat_id, document=cat_url)
+            else:
+                bot.send_photo(chat_id=update.message.chat_id, photo=cat_url)
         elif command == "dog":
             dog_url = requests.get('https://dog.ceo/api/breeds/image/random').json()["message"]
             dog_breed = dog_url.split('/')[-2].title()
