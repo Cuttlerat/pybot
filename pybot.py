@@ -12,7 +12,8 @@ import errno
 import pyowm
 
 from bs4 import BeautifulSoup
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from contextlib import contextmanager
@@ -231,6 +232,7 @@ def wset(bot, update, args):
 def quote(bot, update, args):
 
     command = update.message.text.split()[0].replace('/', '')
+
     if '@' in command:
         command = command.split('@')[0]
     count = int(''.join(args)) if ''.join(args).isdigit() else 1
@@ -265,14 +267,26 @@ def quote(bot, update, args):
                     pass
                 finally:
                     retries += 1
-            if cat_url.split('.')[-1] == 'gif':
-                bot.send_document(chat_id=update.message.chat_id, document=cat_url)
+            if i == count-1:
+                keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Another one!", callback_data='cat'),
+                                                  InlineKeyboardButton("I NEED MORE CATS!", callback_data='cat_5')],
+                                                  [InlineKeyboardButton("No, thank you", callback_data='none')]])
             else:
-                bot.send_photo(chat_id=update.message.chat_id, photo=cat_url)
+                keyboard = InlineKeyboardMarkup([[]])
+            if cat_url.split('.')[-1] == 'gif':
+                bot.send_document(chat_id=update.message.chat_id, document=cat_url, reply_markup=keyboard)
+            else:
+                bot.send_photo(chat_id=update.message.chat_id, photo=cat_url, reply_markup=keyboard)
         elif command == "dog":
             dog_url = requests.get('https://dog.ceo/api/breeds/image/random').json()["message"]
             dog_breed = dog_url.split('/')[-2].title()
-            bot.send_photo(chat_id=update.message.chat_id, photo=dog_url, caption=dog_breed)
+            if i == count-1:
+                keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Another one!", callback_data='dog'),
+                                                  InlineKeyboardButton("I NEED MORE DOGS!", callback_data='dog_5')],
+                                                  [InlineKeyboardButton("No, thank you", callback_data='none')]])
+            else:
+                keyboard = InlineKeyboardMarkup([[]])
+            bot.send_photo(chat_id=update.message.chat_id, photo=dog_url, caption=dog_breed, reply_markup=keyboard)
 
     log_print("{0} {1}".format(command, count), update.message.from_user.username)
 
@@ -423,6 +437,8 @@ def manage(bot, update, args):
     if out_text:
         bot.send_message(chat_id=update.message.chat_id, text=out_text)
         log_print('Manage "{0}"'.format(command), update.message.from_user.username)
+
+
 
 
 # ==== End of manage function ================================================
@@ -605,6 +621,29 @@ def create_table():
 
 # ==== End of create_table function ===============================================
 
+
+def button(bot, update):
+    query = update.callback_query
+    keyboard = InlineKeyboardMarkup([[]])
+    bot.edit_message_reply_markup(chat_id=query.message.chat_id,
+                                  message_id=query.message.message_id,
+                                  reply_markup=keyboard)
+    if query.data == 'cat':
+        query.message.text = '/cat'
+        quote(bot,query,[])
+    if query.data == 'cat_5':
+        query.message.text = '/cat'
+        quote(bot,query,['5'])
+    if query.data == 'dog':
+        query.message.text = '/dog'
+        quote(bot,query,[])
+    if query.data == 'dog_5':
+        query.message.text = '/dog'
+        quote(bot,query,['5'])
+
+# ==== End of button function ===============================================
+
+
 def log_print(message, *username):
     timestamp = datetime.now(tzlocal()).strftime("[%d/%b/%Y:%H:%M:%S %z]")
     if not username:
@@ -644,6 +683,7 @@ try:
     dispatcher.add_handler(CommandHandler(['ibash', 'loglist', 'cat', 'dog'], quote, pass_args=True))
     dispatcher.add_handler(CommandHandler('manage', manage, pass_args=True))
     dispatcher.add_handler(CommandHandler('pinger', pinger, pass_args=True))
+    dispatcher.add_handler(CallbackQueryHandler(button))
     dispatcher.add_handler(MessageHandler(Filters.text, parser))
 
     if MODE.lower() == 'webhook':
