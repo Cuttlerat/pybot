@@ -11,6 +11,10 @@ This is my first telegram bot written in Python
 /wset <City>        - Set default city for /weather
 /ibash <Number>     - Random quote from ibash.org.ru
 /loglist <Number>   - Random quote from loglist.net
+/cat <Number>       - Random cat photo from Tumbler
+/dog <Number>       - Random dog photo from dog.ceo
+/pinger             - Show usage of pinger command wich allow to
+                    + add ping phrases for user who call this command
 /manage <SQL query> - Manage your database (Only for admins)
 ```
 
@@ -27,7 +31,7 @@ BOT_TOKEN = '<YOUR TOKEN>'
 WEATHER_TOKEN = '<YOUR TOKEN>'
 DATABASE_HOST = 'data/pybot.db'
 PORT=10000 # For example
-WEBHOOK_URL = 'https://pybot.example.com:{0}/{1}'.format(PORT, BOT_TOKEN)
+WEBHOOK_URL = 'https://pybot.example.com/{}'.format(BOT_TOKEN)
 ADMINS = [ 'YOUR TELEGRAM USERNAME WITHOUT @' ]
 ```
 
