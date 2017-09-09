@@ -1,4 +1,14 @@
 #!/usr/bin/env python3
+#===============================================================================
+#
+#    DESCRIPTION: Telegram bot in python
+#         AUTHOR: Kioller Alexey
+#         E-MAIL: avkioller@gmail.com
+#         GITHUB: https://github.com/Cuttlerat/pybot
+#        CREATED: 02.08.2017
+#
+#===============================================================================
+
 
 # Import {{{
 import json
