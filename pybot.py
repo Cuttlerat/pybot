@@ -472,7 +472,9 @@ def pinger(bot, update, args):
             try:
                 match = args[1].lower()
             except:
-                match = ""
+                if args[0] not in ["all","delete"]:
+                    p_username = username
+                    match = args[0]
             if not p_username: raise
         except:
             usage_text = "Usage: \n`/pinger username match`\n`/pinger all`\n`/pinger delete username match`"
@@ -492,7 +494,11 @@ def pinger(bot, update, args):
                 elif p_username == "delete":
                     try:
                         p_username = args[1]
-                        delete_match = args[2].lower()
+                        try:
+                            delete_match = args[2].lower()
+                        except:
+                            p_username = username
+                            delete_match = args[1].lower()
                     except:
                         out_text = "Usage `/pinger delete username match`"
                         bot.send_message(chat_id=update.message.chat_id,
