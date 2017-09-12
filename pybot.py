@@ -20,6 +20,7 @@ import os
 import sys
 import errno
 import pyowm
+import subprocess
 
 from bs4 import BeautifulSoup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
@@ -589,6 +590,42 @@ def pinger(bot, update, args):
 # ==== End of pinger function ================================================
 
 
+def cmd(bot, update, args):
+
+    username = update.message.from_user.username
+    if username not in ADMINS:
+        bot.send_message(chat_id=update.message.chat_id,
+                         text="You are not allowed to use this command")
+        log_print('Try of command', username)
+        return
+    else:
+        if not args:
+            bot.send_message(chat_id=update.message.chat_id,
+                             text="Usage `/cmd command`",
+                             parse_mode='markdown')
+            log_print('Usage of command', username)
+            return
+        else:
+            output = ['','']
+            try:
+                process = subprocess.Popen(args, stdout=subprocess.PIPE)
+                output = list(process.communicate())
+            except FileNotFoundError:
+                output[0] = b'\n'
+                output[1] = b'No such command\n'
+            for i in range(len(output)):
+                try:
+                    output[i] = output[i].decode("utf-8")
+                except AttributeError:
+                    output[i] = ""
+            bot.send_message(chat_id=update.message.chat_id,
+                             text="*Output:*\n```\n{0}```*Errors:*\n```\n{1}```".format(*output),
+                             parse_mode='markdown')
+            log_print('Command "{0}"'.format(" ".join(args)), username)
+
+# ==== End of cmd function ===================================================
+
+
 def create_table():
 
     flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY
@@ -697,8 +734,9 @@ try:
 
     dispatcher.add_handler(CommandHandler(['start', 'info'], start))
     dispatcher.add_handler(CommandHandler(['weather', 'w'], weather, pass_args=True))
-    dispatcher.add_handler(CommandHandler('wset', wset, pass_args=True))
     dispatcher.add_handler(CommandHandler(['ibash', 'loglist', 'cat', 'dog'], quote, pass_args=True))
+    dispatcher.add_handler(CommandHandler('cmd', cmd, pass_args=True))
+    dispatcher.add_handler(CommandHandler('wset', wset, pass_args=True))
     dispatcher.add_handler(CommandHandler('manage', manage, pass_args=True))
     dispatcher.add_handler(CommandHandler('pinger', pinger, pass_args=True))
     dispatcher.add_handler(CallbackQueryHandler(button))
