@@ -563,7 +563,7 @@ def pinger(bot, update, args):
                               pingers.match == delete_match)).delete()
                     bot.send_message(chat_id=update.message.chat_id,
                                      text="Deleted")
-                    log_print('Delete pinger with match "{args}"'.format(args_line))
+                    log_print('Delete pinger "{0}"'.format(args_line))
 
                 else:
                     count = ses.query(pingers).filter(and_(
