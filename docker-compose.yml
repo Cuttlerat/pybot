@@ -2,7 +2,7 @@ version: "3"
 services:
 
     pybot:
-        build: 
+        build:
             context: .
             dockerfile: dockerfiles/pybot.Dockerfile
         volumes:
