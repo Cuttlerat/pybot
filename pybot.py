@@ -281,7 +281,7 @@ def quote(bot, update, args):
                 finally:
                     retries += 1
             if i == count-1:
-                keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Another one!", callback_data='cat'),
+                keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Another one!", callback_data='cat_1'),
                                                   InlineKeyboardButton("I NEED MORE CATS!", callback_data='cat_5')],
                                                   [InlineKeyboardButton("No, thank you", callback_data='none')]])
             else:
@@ -294,7 +294,7 @@ def quote(bot, update, args):
             dog_url = requests.get('https://dog.ceo/api/breeds/image/random').json()["message"]
             dog_breed = dog_url.split('/')[-2].title()
             if i == count-1:
-                keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Another one!", callback_data='dog'),
+                keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Another one!", callback_data='dog_1'),
                                                   InlineKeyboardButton("I NEED MORE DOGS!", callback_data='dog_5')],
                                                   [InlineKeyboardButton("No, thank you", callback_data='none')]])
             else:
@@ -683,18 +683,10 @@ def button(bot, update):
     bot.edit_message_reply_markup(chat_id=query.message.chat_id,
                                   message_id=query.message.message_id,
                                   reply_markup=keyboard)
-    if query.data == 'cat':
-        query.message.text = '/cat'
-        quote(bot,query,[])
-    if query.data == 'cat_5':
-        query.message.text = '/cat'
-        quote(bot,query,['5'])
-    if query.data == 'dog':
-        query.message.text = '/dog'
-        quote(bot,query,[])
-    if query.data == 'dog_5':
-        query.message.text = '/dog'
-        quote(bot,query,['5'])
+    if query.data in ['cat_1', 'cat_5', 'dog_1', 'dog_5']:
+        command, value = query.data.split('_')
+        query.message.text = '/{}'.format(command)
+        quote(bot,query,[value])
 
 # ==== End of button function ===============================================
 
