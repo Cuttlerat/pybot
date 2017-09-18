@@ -14,6 +14,7 @@ services:
             dockerfile: dockerfiles/pybot.Dockerfile
         volumes:
           - ./data:/pybot/data
+          - ./tokens:/pybot/tokens:ro
         restart: unless-stopped
         depends_on:
           - pybot_preinstall
