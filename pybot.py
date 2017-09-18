@@ -258,8 +258,10 @@ def quote(bot, update, args):
                 'https://loglist.net/api/quote/random').text)
             quote_id = l_raw_json['id']
             quote_text = l_raw_json['content']
-            bot.send_message(chat_id=update.message.chat_id, text="#" +
-                             quote_id + "\n" + quote_text + "\n", disable_web_page_preview=1)
+            bot.send_message(chat_id=update.message.chat_id, text="```\n#" +
+                             quote_id + "\n" + quote_text + "\n```",
+                             parse_mode='markdown',
+                             disable_web_page_preview=1)
         elif command == "ibash":
             i_response = requests.get('http://ibash.org.ru/random.php').text
             soup = BeautifulSoup(i_response, "html.parser")
@@ -267,8 +269,10 @@ def quote(bot, update, args):
             for br in soup.find_all("br"):
                 br.replace_with("\n")
             quote_text = soup.find("div", class_="quotbody").text
-            bot.send_message(chat_id=update.message.chat_id, text=quote_id +
-                             "\n" + quote_text + "\n", disable_web_page_preview=1)
+            bot.send_message(chat_id=update.message.chat_id, text="```\n" +quote_id +
+                             "\n" + quote_text + "\n```",
+                             parse_mode='markdown',
+                             disable_web_page_preview=1)
         elif command == "cat":
             cat_url = ""
             max_retries = 3
