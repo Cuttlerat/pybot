@@ -246,6 +246,15 @@ def quote(bot, update, args):
 
     command = update.message.text.split()[0].replace('/', '')
 
+    def keyboard_markup(i, count, arg):
+        if i == count-1:
+            keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Another one!", callback_data='{}_1'.format(arg)),
+                                              InlineKeyboardButton("I NEED MORE!", callback_data='{}_5'.format(arg))],
+                                              [InlineKeyboardButton("No, thank you", callback_data='none')]])
+        else:
+            keyboard = InlineKeyboardMarkup([[]])
+        return(keyboard)
+
     if '@' in command:
         command = command.split('@')[0]
     count = int(''.join(args)) if ''.join(args).isdigit() else 1
@@ -258,9 +267,11 @@ def quote(bot, update, args):
                 'https://loglist.net/api/quote/random').text)
             quote_id = l_raw_json['id']
             quote_text = l_raw_json['content']
+            keyboard = keyboard_markup(i, count, 'loglist')
             bot.send_message(chat_id=update.message.chat_id, text="```\n#" +
                              quote_id + "\n" + quote_text + "\n```",
                              parse_mode='markdown',
+                             reply_markup=keyboard,
                              disable_web_page_preview=1)
         elif command == "ibash":
             i_response = requests.get('http://ibash.org.ru/random.php').text
@@ -269,9 +280,11 @@ def quote(bot, update, args):
             for br in soup.find_all("br"):
                 br.replace_with("\n")
             quote_text = soup.find("div", class_="quotbody").text
+            keyboard = keyboard_markup(i, count, 'ibash')
             bot.send_message(chat_id=update.message.chat_id, text="```\n" +quote_id +
                              "\n" + quote_text + "\n```",
                              parse_mode='markdown',
+                             reply_markup=keyboard,
                              disable_web_page_preview=1)
         elif command == "cat":
             cat_url = ""
@@ -284,12 +297,7 @@ def quote(bot, update, args):
                     pass
                 finally:
                     retries += 1
-            if i == count-1:
-                keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Another one!", callback_data='cat_1'),
-                                                  InlineKeyboardButton("I NEED MORE CATS!", callback_data='cat_5')],
-                                                  [InlineKeyboardButton("No, thank you", callback_data='none')]])
-            else:
-                keyboard = InlineKeyboardMarkup([[]])
+            keyboard = keyboard_markup(i, count, 'cat')
             if cat_url.split('.')[-1] == 'gif':
                 bot.send_document(chat_id=update.message.chat_id, document=cat_url, reply_markup=keyboard)
             else:
@@ -297,12 +305,7 @@ def quote(bot, update, args):
         elif command == "dog":
             dog_url = requests.get('https://dog.ceo/api/breeds/image/random').json()["message"]
             dog_breed = dog_url.split('/')[-2].title()
-            if i == count-1:
-                keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Another one!", callback_data='dog_1'),
-                                                  InlineKeyboardButton("I NEED MORE DOGS!", callback_data='dog_5')],
-                                                  [InlineKeyboardButton("No, thank you", callback_data='none')]])
-            else:
-                keyboard = InlineKeyboardMarkup([[]])
+            keyboard = keyboard_markup(i, count, 'dog')
             bot.send_photo(chat_id=update.message.chat_id, photo=dog_url, caption=dog_breed, reply_markup=keyboard)
 
     log_print("{0} {1}".format(command, count), update.message.from_user.username)
@@ -687,7 +690,10 @@ def button(bot, update):
     bot.edit_message_reply_markup(chat_id=query.message.chat_id,
                                   message_id=query.message.message_id,
                                   reply_markup=keyboard)
-    if query.data in ['cat_1', 'cat_5', 'dog_1', 'dog_5']:
+    if query.data in ['cat_1', 'cat_5',
+                      'dog_1', 'dog_5',
+                      'ibash_1', 'ibash_5',
+                      'loglist_1', 'loglist_5']:
         command, value = query.data.split('_')
         query.message.text = '/{}'.format(command)
         quote(bot,query,[value])
