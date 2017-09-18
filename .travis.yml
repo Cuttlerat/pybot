@@ -16,12 +16,19 @@ install:
   - docker version
   - sudo pip install docker-compose
   - docker-compose version
-  - mv .travis.tokens.py tokens.py
-  - echo "BOT_TOKEN = '${BOT_TOKEN}'" >> tokens.py
+  - mkdir ./tokens
+  - mv .travis.tokens.py ./tokens/tokens.py
+  - echo "BOT_TOKEN = '${BOT_TOKEN}'" >> ./tokens/tokens.py
+
+before_script:
+  - docker login -u="$REGISTRY_USERNAME" -p="$REGISTRY_PASSWORD"
 
 script:
   - docker-compose up --build -d
 
 after_script:
   - docker-compose down
+  - docker tag pybot cuttlerat/pybot
+  - docker push cuttlerat/pybot
+  - curl -X GET "${WEBHOOK}"
 
