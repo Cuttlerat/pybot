@@ -5,6 +5,5 @@ RUN apt-get update
 RUN apt-get install -y tzdata
 RUN cp /usr/share/zoneinfo/Europe/Moscow /etc/localtime
 COPY ./requirements /pybot/requirements
-COPY ./tokens.py /pybot/tokens.py
 WORKDIR /pybot
 RUN pip3.6 install -r requirements
