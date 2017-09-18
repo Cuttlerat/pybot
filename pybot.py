@@ -36,7 +36,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import NoResultFound
 from dateutil.tz import tzlocal
 from datetime import datetime, timedelta
-from tokens import *
+from tokens.tokens import *
 # }}}
 
 logging.basicConfig(

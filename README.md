@@ -25,7 +25,7 @@ git clone https://github.com/Cuttlerat/pybot.git
 cd pybot
 ```
 
-Add your telegram username, tokens, and database path into `./tokens.py` file
+Add your telegram username, tokens, and database path into `./tokens/tokens.py` file
 ```python
 BOT_TOKEN = '<YOUR TOKEN>'
 WEATHER_TOKEN = '<YOUR TOKEN>'
