@@ -30,5 +30,5 @@ after_script:
   - docker-compose down
   - docker tag pybot cuttlerat/pybot
   - docker push cuttlerat/pybot
-  - curl -X GET "${WEBHOOK}"
+  - curl -X GET '${WEBHOOK}'
 
