@@ -1,5 +1,6 @@
 ---
 sudo: required
+language: python
 dist: trusty
 branches:
   only:
@@ -31,6 +32,7 @@ script:
 
 after_script:
   - docker-compose down
+  - echo "$TRAVIS_BRANCH"
   - if [ "$TRAVIS_BRANCH" == "master" ]; then\
     docker tag pybot cuttlerat/pybot;\
     docker push cuttlerat/pybot;\
