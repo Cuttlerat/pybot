@@ -1,5 +1,6 @@
 ---
 sudo: required
+language: python
 dist: trusty
 
 install:
@@ -28,7 +29,10 @@ script:
 
 after_script:
   - docker-compose down
-  - docker tag pybot cuttlerat/pybot
-  - docker push cuttlerat/pybot
-  - curl -X GET "$WEBHOOK"
+  - >
+    if [ "$TRAVIS_BRANCH" == "master" ]; then
+        docker tag pybot cuttlerat/pybot;
+        docker push cuttlerat/pybot;
+        curl -X GET "$WEBHOOK";
+    fi
 
