@@ -2,9 +2,6 @@
 sudo: required
 language: python
 dist: trusty
-branches:
-  only:
-    - master
 
 install:
   - >
