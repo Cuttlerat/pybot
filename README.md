@@ -30,8 +30,7 @@ Add your telegram username, tokens, and database path into `./tokens/tokens.py` 
 BOT_TOKEN = '<YOUR TOKEN>'
 WEATHER_TOKEN = '<YOUR TOKEN>'
 DATABASE_HOST = 'data/pybot.db'
-PORT=10000 # For example
-WEBHOOK_URL = 'https://pybot.example.com/{}'.format(BOT_TOKEN)
+MODE = 'Webhook' # Or Polling
 ADMINS = [ 'YOUR TELEGRAM USERNAME WITHOUT @' ]
 ```
 
@@ -127,4 +126,4 @@ Cuttlerat: ping all except kosc
 Cuttlebot: @Cuttlerat
 ```
 
-And is it! Enjoy your bot!
+A
