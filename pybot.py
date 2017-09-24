@@ -684,7 +684,7 @@ def create_table():
 # ==== End of create_table function ===============================================
 
 
-def button(bot, update):
+def buttons(bot, update):
     query = update.callback_query
     keyboard = InlineKeyboardMarkup([[]])
     bot.edit_message_reply_markup(chat_id=query.message.chat_id,
@@ -698,7 +698,7 @@ def button(bot, update):
         query.message.text = '/{}'.format(command)
         random_content(bot,query,[value])
 
-# ==== End of button function ===============================================
+# ==== End of buttons function ===============================================
 
 
 def log_print(message, *username):
@@ -741,7 +741,7 @@ try:
     dispatcher.add_handler(CommandHandler('wset', wset, pass_args=True))
     dispatcher.add_handler(CommandHandler('manage', manage, pass_args=True))
     dispatcher.add_handler(CommandHandler('pinger', pinger, pass_args=True))
-    dispatcher.add_handler(CallbackQueryHandler(button))
+    dispatcher.add_handler(CallbackQueryHandler(buttons))
     dispatcher.add_handler(MessageHandler(Filters.text, parser))
 
     if MODE.lower() == 'webhook':
