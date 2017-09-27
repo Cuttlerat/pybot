@@ -126,4 +126,4 @@ Cuttlerat: ping all except kosc
 Cuttlebot: @Cuttlerat
 ```
 
-A
+And is it! Enjoy your bot!
