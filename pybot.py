@@ -145,10 +145,8 @@ def weather(bot, update, args):
     temp = str(round(weather.get_temperature(unit='celsius')["temp"]))
     if temp[0] != '-' and temp != "0":
         weathers["today", "temp", 0] = '+' + temp
-    elif temp[0] == '-' or temp == "0":
-        weathers["today", "temp", 0] = temp
     else:
-        weathers["today", "temp", 0] = "-257"
+        weathers["today", "temp", 0] = temp
     weathers["today", "emoji", 0] = get_emoji(weather.get_status())
     status = weather.get_detailed_status()
     weathers["today", "status", 0] = status[0].upper() + status[1:]
@@ -159,10 +157,8 @@ def weather(bot, update, args):
             temp = str(round(weather.get_temperature('celsius')["temp"]))
             if temp[0] != '-' and temp != "0":
                 weathers["tomorrow", "temp", i] = '+' + temp
-            elif temp[0] == '-' or temp == "0":
-                weathers["tomorrow", "temp", i] = temp
             else:
-                weathers["tomorrow", "temp", i] = "-257"
+                weathers["tomorrow", "temp", i] = temp
             weathers["tomorrow", "emoji", i] = get_emoji(weather.get_status())
             status = weather.get_detailed_status()
             weathers["tomorrow", "status", i] = status[0].upper() + status[1:]
