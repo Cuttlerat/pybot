@@ -31,6 +31,8 @@ BOT_TOKEN = '<YOUR TOKEN>'
 WEATHER_TOKEN = '<YOUR TOKEN>'
 DATABASE_HOST = 'data/pybot.db'
 MODE = 'Webhook' # Or Polling
+WEBHOOK_PORT = 30222
+WEBHOOK_URL = "https://example.com/{}".format(BOT_TOKEN)
 ADMINS = [ 'YOUR TELEGRAM USERNAME WITHOUT @' ]
 ```
 
