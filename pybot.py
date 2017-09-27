@@ -254,7 +254,7 @@ def wset(bot, update, args):
 # ==== End of wset function ===============================================
 
 
-def quote(bot, update, args):
+def random_content(bot, update, args):
 
     MAX_QUOTES = 5
 
@@ -324,7 +324,7 @@ def quote(bot, update, args):
 
     log_print("{0} {1}".format(command, count), update.message.from_user.username)
 
-# ==== End of quote function ===============================================
+# ==== End of random_content function ===============================================
 
 
 def parser(bot, update):
@@ -698,7 +698,7 @@ def create_table():
 # ==== End of create_table function ===============================================
 
 
-def button(bot, update):
+def buttons(bot, update):
     query = update.callback_query
     keyboard = InlineKeyboardMarkup([[]])
     bot.edit_message_reply_markup(chat_id=query.message.chat_id,
@@ -710,9 +710,9 @@ def button(bot, update):
                       'loglist_1', 'loglist_5']:
         command, value = query.data.split('_')
         query.message.text = '/{}'.format(command)
-        quote(bot,query,[value])
+        random_content(bot,query,[value])
 
-# ==== End of button function ===============================================
+# ==== End of buttons function ===============================================
 
 
 def log_print(message, *username):
@@ -750,12 +750,12 @@ try:
 
     dispatcher.add_handler(CommandHandler(['start', 'info'], start))
     dispatcher.add_handler(CommandHandler(['weather', 'w'], weather, pass_args=True))
-    dispatcher.add_handler(CommandHandler(['ibash', 'loglist', 'cat', 'dog'], quote, pass_args=True))
+    dispatcher.add_handler(CommandHandler(['ibash', 'loglist', 'cat', 'dog'], random_content, pass_args=True))
     dispatcher.add_handler(CommandHandler('cmd', cmd, pass_args=True))
     dispatcher.add_handler(CommandHandler('wset', wset, pass_args=True))
     dispatcher.add_handler(CommandHandler('manage', manage, pass_args=True))
     dispatcher.add_handler(CommandHandler('pinger', pinger, pass_args=True))
-    dispatcher.add_handler(CallbackQueryHandler(button))
+    dispatcher.add_handler(CallbackQueryHandler(buttons))
     dispatcher.add_handler(MessageHandler(Filters.text, parser))
 
     if MODE.lower() == 'webhook':
