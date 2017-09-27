@@ -34,5 +34,8 @@ after_script:
         docker tag pybot cuttlerat/pybot;
         docker push cuttlerat/pybot;
         curl -X GET "$WEBHOOK";
+        if [ "$( curl -s $WEBHOOK )" != "" ]; then
+            exit 1;
+        fi
     fi
 
