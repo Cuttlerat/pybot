@@ -143,8 +143,12 @@ def weather(bot, update, args):
     today = pyowm.timeutils.next_three_hours()
     weather = fc.get_weather_at(today)
     temp = str(round(weather.get_temperature(unit='celsius')["temp"]))
-    if temp[0] != '-':
+    if temp[0] != '-' and temp != "0":
         weathers["today", "temp", 0] = '+' + temp
+    elif temp[0] == '-' or temp == "0":
+        weathers["today", "temp", 0] = temp
+    else:
+        weathers["today", "temp", 0] = "-257"
     weathers["today", "emoji", 0] = get_emoji(weather.get_status())
     status = weather.get_detailed_status()
     weathers["today", "status", 0] = status[0].upper() + status[1:]
@@ -153,8 +157,12 @@ def weather(bot, update, args):
     for i in range(6, 19, 6):
             weather = fc.get_weather_at(pyowm.timeutils.tomorrow(i, 0))
             temp = str(round(weather.get_temperature('celsius')["temp"]))
-            if temp[0] != '-':
+            if temp[0] != '-' and temp != "0":
                 weathers["tomorrow", "temp", i] = '+' + temp
+            elif temp[0] == '-' or temp == "0":
+                weathers["tomorrow", "temp", i] = temp
+            else:
+                weathers["tomorrow", "temp", i] = "-257"
             weathers["tomorrow", "emoji", i] = get_emoji(weather.get_status())
             status = weather.get_detailed_status()
             weathers["tomorrow", "status", i] = status[0].upper() + status[1:]
@@ -166,22 +174,28 @@ def weather(bot, update, args):
     now_status = now_status[0].upper() + now_status[1:]
     now_emoji = get_emoji(w.get_status())
 
-    message = ''.join("""
-    *Now:*
-    *{0}:* {1} {2} {3}
+    try:
+        message = ''.join("""
+        *Now:*
+        *{0}:* {1} {2} {3}
 
-    *In near future:*
-    {4} {5} {6}
+        *In near future:*
+        {4} {5} {6}
 
-    *Tomorrow:*
-    *Morning:* {7} {8} {9}
-    *Noon:* {10} {11} {12}
-    *Evening:* {13} {14} {15}
-    """.format(city,
-               now_temp,
-               now_emoji,
-               now_status,
-               *[weathers[i] for i in weathers]))
+        *Tomorrow:*
+        *Morning:* {7} {8} {9}
+        *Noon:* {10} {11} {12}
+        *Evening:* {13} {14} {15}
+        """.format(city,
+                   now_temp,
+                   now_emoji,
+                   now_status,
+                   *[weathers[i] for i in weathers]))
+    except IndexError:
+        error_message = "Something wrong with API:\n\n{}".format(weathers)
+        bot.send_message(chat_id=update.message.chat_id, text=error_message)
+        log_print('"{0}"'.format(error_message), username)
+        return
 
     message = "\n".join([k.strip() for k in message.split('\n')])
 
