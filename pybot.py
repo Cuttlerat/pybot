@@ -91,7 +91,7 @@ def weather(bot, update, args):
     locations = Base.classes.locations
 
     if not city:
-        with conn(engine) as ses:
+        with connector(engine) as ses:
             try:
                 city = ses.query(locations.city).filter(
                     locations.username == username).one()
@@ -214,7 +214,7 @@ def wset(bot, update, args):
 
     locations = Base.classes.locations
 
-    with conn(engine) as ses:
+    with connector(engine) as ses:
         try:
             ses.query(locations.username).filter(
                 locations.username == username).one()
@@ -339,7 +339,7 @@ def parser(bot, update):
     pingers = Base.classes.pingers
 
     # ------------ Weather ----------------
-    with conn(engine) as ses:
+    with connector(engine) as ses:
         try:
             phrase = "".join(ses.query(w_phrases.match).filter(
                 literal(in_text.lower()).contains(w_phrases.match)).one())
@@ -350,7 +350,7 @@ def parser(bot, update):
 
     # ------------ Google -----------------
 
-    with conn(engine) as ses:
+    with connector(engine) as ses:
         try:
             ses.query(google_ignore.ignore).filter(
                 google_ignore.ignore.in_(in_text.split())).one()
@@ -374,7 +374,7 @@ def parser(bot, update):
 
     # ------------ Ping -----------------
 
-    with conn(engine) as ses:
+    with connector(engine) as ses:
         in_text_list = in_text.split()
         username = update.message.from_user.username
         chat_id = update.message.chat_id
@@ -424,7 +424,7 @@ def parser(bot, update):
 
     # ------------ Answer -----------------
 
-    with conn(engine) as ses:
+    with connector(engine) as ses:
         out_text = ses.query(answers.string).filter(
             literal(in_text).contains(answers.match))
     for message in ["".join(i) for i in out_text]:
@@ -451,18 +451,18 @@ def manage(bot, update, args):
                 "%%%chat_id%%%", str(update.message.chat_id))
 
         engine = create_engine(DATABASE)
-        conn = engine.connect()
+        connector = engine.connect()
 
         try:
             out_text = "\n".join([" | ".join([str(i) for i in i])
                                   for i in engine.execute(command).fetchall()])
-            conn.close()
+            connector.close()
         except ResourceClosedError:
             out_text = command = "Successfuly"
-            conn.close()
+            connector.close()
         except:
             out_text = command = "Bad command"
-            conn.close()
+            connector.close()
 
     if out_text:
         bot.send_message(chat_id=update.message.chat_id, text=out_text)
@@ -500,7 +500,7 @@ def pinger(bot, update, args):
                              parse_mode='markdown',
                              text=usage_text)
             return
-        with conn(engine) as ses:
+        with connector(engine) as ses:
             try:
                 if p_username == "all":
                     all_matches = ses.query(pingers).filter(pingers.chat_id == chat_id).all()
@@ -531,7 +531,7 @@ def pinger(bot, update, args):
                                      text="Deleted")
                     log_print('Delete pinger "{0}"'.format(args_line), username)
                 else:
-                    with conn(engine) as ses:
+                    with connector(engine) as ses:
                         new_pinger = pingers(
                             username=p_username,
                             match=match,
@@ -555,7 +555,7 @@ def pinger(bot, update, args):
                                  parse_mode='markdown',
                                  text=out_text)
                 return
-            with conn(engine) as ses:
+            with connector(engine) as ses:
                 if user_match == "all":
                     all_matches = ses.query(pingers).filter(and_(
                                   pingers.chat_id == chat_id,
@@ -720,7 +720,7 @@ def log_print(message, *username):
 
 
 @contextmanager
-def conn(engine):
+def connector(engine):
     session = Session(engine)
     try:
         yield session
