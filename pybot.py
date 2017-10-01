@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 #===============================================================================
 #
 #    DESCRIPTION: Telegram bot in python
@@ -8,7 +9,6 @@
 #        CREATED: 02.08.2017
 #
 #===============================================================================
-
 
 # Import {{{
 import json
@@ -123,7 +123,6 @@ def weather(bot, update, args):
         bot.send_message(chat_id=update.message.chat_id, text=error_message)
         log_print('Weather "{0}"'.format(error_message), username)
         return
-
 
     try:
         observation = owm.weather_at_place(city)
@@ -349,7 +348,6 @@ def parser(bot, update):
             pass
 
     # ------------ Google -----------------
-
     with connector(engine) as ses:
         try:
             ses.query(google_ignore.ignore).filter(
@@ -373,7 +371,6 @@ def parser(bot, update):
                 return
 
     # ------------ Ping -----------------
-
     with connector(engine) as ses:
         in_text_list = in_text.split()
         username = update.message.from_user.username
@@ -423,7 +420,6 @@ def parser(bot, update):
             pass
 
     # ------------ Answer -----------------
-
     with connector(engine) as ses:
         out_text = ses.query(answers.string).filter(
             literal(in_text).contains(answers.match))
