@@ -44,14 +44,14 @@ after_success:
                 --max-time "10"                                                   \
                 --output /dev/null                                                \
                 --data-urlencode                                                  \
-                "text=${BUILD_MASTER}%0ACommit message: ${TRAVIS_COMMIT_MESSAGE}" \
+                "text=${BUILD_MASTER} => ${TRAVIS_COMMIT_MESSAGE}"                \
                           --data "chat_id=${BUILD_CHAT_ID}"                       ;
     else
         curl -s "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage"            \
                 --max-time "10"                                                   \
                 --output /dev/null                                                \
                 --data-urlencode                                                  \
-                "text=${BUILD_TEXT}%0ACommit message: ${TRAVIS_COMMIT_MESSAGE}"   \
+                "text=${BUILD_TEXT} => ${TRAVIS_COMMIT_MESSAGE}"                  \
                           --data "chat_id=${BUILD_CHAT_ID}"                       ;
     fi
 
