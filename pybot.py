@@ -348,7 +348,7 @@ def parser(bot, update):
             pass
 
     # ------------ Google -----------------
-    with conn(engine) as ses:
+    with connector(engine) as ses:
         g_in_text = in_text.replace("?", "")
         try:
             ses.query(google_ignore.ignore).filter(
