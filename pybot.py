@@ -348,12 +348,12 @@ def parser(bot, update):
             pass
 
     # ------------ Google -----------------
-    with connector(engine) as ses:
+    with conn(engine) as ses:
+        g_in_text = in_text.replace("?", "")
         try:
             ses.query(google_ignore.ignore).filter(
-                google_ignore.ignore.in_(in_text.split())).one()
+                google_ignore.ignore.in_(g_in_text.split())).one()
         except NoResultFound:
-            g_in_text = in_text.replace("?", "")
             matches = ses.query(google.match).filter(
                 literal(in_text).like(google.match + '%')).all()
             matches = [i for i in matches for i in i]
