@@ -746,7 +746,7 @@ try:
     dispatcher.add_handler(CommandHandler('cmd', cmd, pass_args=True))
     dispatcher.add_handler(CommandHandler('wset', wset, pass_args=True))
     dispatcher.add_handler(CommandHandler('manage', manage, pass_args=True))
-    dispatcher.add_handler(CommandHandler('pinger', pinger, pass_args=True))
+    dispatcher.add_handler(CommandHandler('ping', pinger, pass_args=True))
     dispatcher.add_handler(CallbackQueryHandler(buttons))
     dispatcher.add_handler(MessageHandler(Filters.text, parser))
 
