@@ -430,7 +430,7 @@ def parser(bot, update):
 
 # ==== End of parser function ================================================
 
-def manage(bot, update, args):
+def db(bot, update, args):
 
     if update.message.from_user.username not in ADMINS:
         out_text = "You are not an administrator. The incident will be reported"
@@ -463,8 +463,6 @@ def manage(bot, update, args):
     if out_text:
         bot.send_message(chat_id=update.message.chat_id, text=out_text)
         log_print('Manage "{0}"'.format(command), update.message.from_user.username)
-
-
 
 
 # ==== End of manage function ================================================
@@ -745,7 +743,7 @@ try:
     dispatcher.add_handler(CommandHandler(['ibash', 'loglist', 'cat', 'dog'], random_content, pass_args=True))
     dispatcher.add_handler(CommandHandler('cmd', cmd, pass_args=True))
     dispatcher.add_handler(CommandHandler('wset', wset, pass_args=True))
-    dispatcher.add_handler(CommandHandler('manage', manage, pass_args=True))
+    dispatcher.add_handler(CommandHandler('db', db, pass_args=True))
     dispatcher.add_handler(CommandHandler('ping', pinger, pass_args=True))
     dispatcher.add_handler(CallbackQueryHandler(buttons))
     dispatcher.add_handler(MessageHandler(Filters.text, parser))
