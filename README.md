@@ -15,7 +15,7 @@ This is my first telegram bot written in Python
 /dog <Number>       - Random dog photo from dog.ceo
 /ping               - Show usage of pinger command wich allow to
                     + add ping phrases for user who call this command
-/manage <SQL query> - Manage your database (Only for admins)
+/db <SQL query>     - Manage your database (Only for admins)
 ```
 
 ## Starting
@@ -53,7 +53,7 @@ docker-compose up --build pybot
 You can get a weather token here: http://openweathermap.org/ <br>
 Register your bot here: https://t.me/BotFather
 
-## How to /manage database
+## How to manage database
 
 If you want that your bot triggers on a some type of messages, there some options here.
 
@@ -68,7 +68,7 @@ Cuttlebot: https://www.google.ru/search?q=Jenkins
 You will need to add a note in your database like this:
 
 ```sql
-/manage INSERT INTO google(match) VALUES("what is")
+/db INSERT INTO google(match) VALUES("what is")
 ```
 
 All matches must be in a low case! It's important (I will do something with it later)
@@ -76,7 +76,7 @@ All matches must be in a low case! It's important (I will do something with it l
 If you don't want any word to trigger this function
 
 ```sql
-/manage INSERT INTO google_ignore(ignore) VALUES("Jenkins")
+/db INSERT INTO google_ignore(ignore) VALUES("Jenkins")
 Cuttlerat: What is Jenkins?
 *no answer*
 ```
@@ -86,7 +86,7 @@ Cuttlerat: What is Jenkins?
 If you want a simple trigger on a message responding with your specified string
 
 ```sql
-/manage INSERT INTO answers(match,string) VALUES("hello!", "Hi!")
+/db INSERT INTO answers(match,string) VALUES("hello!", "Hi!")
 Cuttlerat: Hello!
 Cutltebot: Hi!
 ```
@@ -96,7 +96,7 @@ Cutltebot: Hi!
 If you want to summon someone with just mentioning of his name or nickname
 
 ```sql
-/manage INSERT INTO pingers(username,match) VALUES("Cuttlerat", "rat")
+/db INSERT INTO pingers(username,match) VALUES("Cuttlerat", "rat")
 Cuttlerat: rat!
 *nothing*
 ```
@@ -104,7 +104,7 @@ Cuttlerat: rat!
 Why? Because we didn't set a ping phrase yet
 
 ```sql
-/manage INSERT INTO ping_phrases(phrase) VALUES("ping")
+/db INSERT INTO ping_phrases(phrase) VALUES("ping")
 Cuttlerat: ping rat
 Cuttlebot: @Cuttlerat
 ```
@@ -112,8 +112,8 @@ Cuttlebot: @Cuttlerat
 There is a little trick to summon all persons from the pingers table
 
 ```sql
-/manage INSERT INTO pingers(username,match) VALUES("hotkosc", "kosc")
-/manage INSERT INTO pingers(username,match) VALUES("EVERYONE GET IN HERE", "all")
+/db INSERT INTO pingers(username,match) VALUES("hotkosc", "kosc")
+/db INSERT INTO pingers(username,match) VALUES("EVERYONE GET IN HERE", "all")
 Cuttlerat: ping all
 Cuttlebot: @Cuttlerat @hotkosc
 ```
@@ -123,7 +123,7 @@ But what if you want to call everyone except one guy?
 You will need to add a ping exclude phrase
 
 ```sql
-/manage INSERT INTO ping_exclude(match) VALUES("excpet")
+/db INSERT INTO ping_exclude(match) VALUES("excpet")
 Cuttlerat: ping all except kosc
 Cuttlebot: @Cuttlerat
 ```
