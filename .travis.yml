@@ -41,34 +41,38 @@ after_success:
         docker push cuttlerat/pybot;
         echo "Done";
         TEXT=$( sed 's/^ \+//' <<< "
-        ${BUILD_MASTER}
-        Commit message: ${TRAVIS_COMMIT_MESSAGE}
-        Link: https://github.com/Cuttlerat/pybot/commit/${TRAVIS_COMMIT}" )
+        *${BUILD_MASTER}*
+        *Commit message:* ${TRAVIS_COMMIT_MESSAGE}
+        https://github.com/Cuttlerat/pybot/commit/${TRAVIS_COMMIT}" )
         curl -s "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage"            \
                 --max-time "10"                                                   \
                 --output /dev/null                                                \
                 --data-urlencode "text=${TEXT}"                                   \
-                          --data "chat_id=${BUILD_CHAT_ID}"                       ;
+                          --data "chat_id=${BUILD_CHAT_ID}"                       \
+                          --data "parse_mode=markdown"                            ;
+
     else
         TEXT=$( sed 's/^ \+//' <<< "
-        ${BUILD_TEXT}
-        Commit message: ${TRAVIS_COMMIT_MESSAGE}
-        Link: https://github.com/Cuttlerat/pybot/commit/${TRAVIS_COMMIT}" )
+        *${BUILD_TEXT}*
+        *Commit message:* ${TRAVIS_COMMIT_MESSAGE}
+        https://github.com/Cuttlerat/pybot/commit/${TRAVIS_COMMIT}" )
         curl -s "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage"            \
                 --max-time "10"                                                   \
                 --output /dev/null                                                \
                 --data-urlencode "text=${TEXT}"                                   \
-                          --data "chat_id=${BUILD_CHAT_ID}"                       ;
+                          --data "chat_id=${BUILD_CHAT_ID}"                       \
+                          --data "parse_mode=markdown"                            ;
     fi
 
 after_failure:
   - >
     TEXT=$( sed 's/^ \+//' <<< "
-    ${BUILD_ERROR}
-    Commit message: ${TRAVIS_COMMIT_MESSAGE}
-    Link: https://github.com/Cuttlerat/pybot/commit/${TRAVIS_COMMIT}" )
+    *${BUILD_ERROR}*
+    *Commit message:* ${TRAVIS_COMMIT_MESSAGE}
+    https://github.com/Cuttlerat/pybot/commit/${TRAVIS_COMMIT}" )
     curl -s "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage"            \
             --max-time "10"                                                   \
             --output /dev/null                                                \
             --data-urlencode "text=${TEXT}"                                   \
-                      --data "chat_id=${BUILD_CHAT_ID}"                       ;
+                      --data "chat_id=${BUILD_CHAT_ID}"                       \
+                      --data "parse_mode=markdown"                            ;
