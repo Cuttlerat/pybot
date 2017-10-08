@@ -93,6 +93,8 @@ Cutltebot: Hi!
 
 ### Ping
 
+You also can use the `/ping` command for this, and so all the others (besides the administrator) can use this to add trigers but not more than 10
+
 If you want to summon someone with just mentioning of his name or nickname
 
 ```sql
