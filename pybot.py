@@ -512,7 +512,7 @@ def pinger(bot, update, args):
                             p_username = username
                             delete_match = args[1].lower()
                     except:
-                        out_text = "Usage `/ping delete username match`"
+                        out_text = "Usage `/ping delete username <word>`"
                         bot.send_message(chat_id=update.message.chat_id,
                                          parse_mode='markdown',
                                          text=out_text)
@@ -544,7 +544,7 @@ def pinger(bot, update, args):
                 user_match = args[0].lower()
                 if not user_match: raise
             except:
-                out_text = "Usage: \n`/ping <word>`\n`/ping all`\n`/ping delete match`"
+                out_text = "Usage: \n`/ping <word>`\n`/ping all`\n`/ping delete <word>`"
                 bot.send_message(chat_id=update.message.chat_id,
                                  parse_mode='markdown',
                                  text=out_text)
@@ -563,7 +563,7 @@ def pinger(bot, update, args):
                     try:
                         delete_match = args[1].lower()
                     except:
-                        out_text = "Usage `/ping delete match`"
+                        out_text = "Usage `/ping delete <word>`"
                         bot.send_message(chat_id=update.message.chat_id,
                                          parse_mode='markdown',
                                          text=out_text)
