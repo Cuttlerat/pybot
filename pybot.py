@@ -106,7 +106,7 @@ def weather(bot, update, args):
                         error_message = '''
                         You didn't set the default city
                         You can add default city by this command:
-                        `/manage insert into locations(username,city) \
+                        `/db insert into locations(username,city) \
                         values(\"default_city\",\"YOUR CITY HERE\")`'''
                         error_message = "\n".join(
                             [i.strip() for i in error_message.split('\n')])
@@ -465,7 +465,7 @@ def db(bot, update, args):
         log_print('Manage "{0}"'.format(command), update.message.from_user.username)
 
 
-# ==== End of manage function ================================================
+# ==== End of db function ================================================
 
 def pinger(bot, update, args):
 
