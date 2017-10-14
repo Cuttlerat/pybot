@@ -234,7 +234,7 @@ def wset(bot, update, args):
 
         except NoResultFound:
             if not city or city == "delete":
-                out_text = "No informaton about @{0}".format(username)
+                out_text = "Usage:\n/wset <city> - Set default city for /w\n/wset delete - Delete your default city".format(username)
                 city = 'none'
             else:
                 new_location = locations(
