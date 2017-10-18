@@ -9,6 +9,7 @@ function _log_echo {
 cd /pybot
 
 while :; do
+
     _log_echo "Waiting for updates"
     inotifywait -e modify ./pybot.py &>/dev/null
 
@@ -22,7 +23,9 @@ while :; do
 
     _log_echo "Restarting pybot"
     docker-compose restart pybot &>/dev/null     \
+        && _log_echo "Restarted"                 \
         || _log_echo "Error while restarting"
+
 
 done
 
