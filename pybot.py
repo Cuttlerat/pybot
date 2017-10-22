@@ -619,8 +619,8 @@ def cmd(bot, update, args):
         else:
             output = ['','']
             try:
-                process = subprocess.Popen(args, stdout=subprocess.PIPE)
-                output = list(process.communicate())
+                command = subprocess.Popen(args, stdout=subprocess.PIPE)
+                output = list(command.communicate())
             except FileNotFoundError:
                 output[0] = b'\n'
                 output[1] = b'No such command\n'
@@ -738,15 +738,17 @@ try:
     updater = Updater(token=BOT_TOKEN)
     dispatcher = updater.dispatcher
 
-    dispatcher.add_handler(CommandHandler(['start', 'info'], start))
-    dispatcher.add_handler(CommandHandler(['weather', 'w'], weather, pass_args=True))
-    dispatcher.add_handler(CommandHandler(['ibash', 'loglist', 'cat', 'dog'], random_content, pass_args=True))
-    dispatcher.add_handler(CommandHandler('cmd', cmd, pass_args=True))
-    dispatcher.add_handler(CommandHandler('wset', wset, pass_args=True))
-    dispatcher.add_handler(CommandHandler('db', db, pass_args=True))
-    dispatcher.add_handler(CommandHandler('ping', pinger, pass_args=True))
-    dispatcher.add_handler(CallbackQueryHandler(buttons))
-    dispatcher.add_handler(MessageHandler(Filters.text, parser))
+    [dispatcher.add_handler(i) for i in [
+        CommandHandler(['start', 'info'], start),
+        CommandHandler(['weather', 'w'], weather, pass_args=True),
+        CommandHandler(['ibash', 'loglist', 'cat', 'dog'], random_content, pass_args=True),
+        CommandHandler('cmd', cmd, pass_args=True),
+        CommandHandler('wset', wset, pass_args=True),
+        CommandHandler('db', db, pass_args=True),
+        CommandHandler('ping', pinger, pass_args=True),
+        CallbackQueryHandler(buttons),
+        MessageHandler(Filters.text, parser)
+    ]]
 
     if MODE.lower() == 'webhook':
         updater.start_webhook(listen="0.0.0.0",
