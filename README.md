@@ -30,10 +30,12 @@ Add your telegram username, tokens, and database path into `./tokens/tokens.py` 
 BOT_TOKEN = '<YOUR TOKEN>'
 WEATHER_TOKEN = '<YOUR TOKEN>'
 DATABASE_HOST = 'data/pybot.db'
+ADMINS = [ 'YOUR TELEGRAM USERNAME WITHOUT @' ]
 MODE = 'Webhook' # Or Polling
 WEBHOOK_PORT = 30222
 WEBHOOK_URL = "https://example.com/{}".format(BOT_TOKEN)
-ADMINS = [ 'YOUR TELEGRAM USERNAME WITHOUT @' ]
+# Uncomment this if you want to run with webhook not in docker
+# LISTEN_IP = "<your ip>"
 ```
 
 Then just launch the bot
