@@ -751,7 +751,11 @@ try:
     ]]
 
     if MODE.lower() == 'webhook':
-        updater.start_webhook(listen="0.0.0.0",
+        try:
+            LISTEN_IP
+        except NameError:
+            LISTEN_IP = "0.0.0.0"
+        updater.start_webhook(listen=LISTEN_IP,
                               port=WEBHOOK_PORT,
                               url_path=BOT_TOKEN)
         updater.bot.set_webhook(WEBHOOK_URL)
