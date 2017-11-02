@@ -314,7 +314,7 @@ def random_content(bot, update, args):
                 br.replace_with("\n")
             quote_text = soup.find("div", class_="quotbody").text
             keyboard = keyboard_markup(i, count, 'ibash')
-            bot.send_message(chat_id=update.message.chat_id, text="```\n" +quote_id +
+            bot.send_message(chat_id=update.message.chat_id, text="```\n" + quote_id +
                              "\n" + quote_text + "\n```",
                              parse_mode='markdown',
                              reply_markup=keyboard,
@@ -510,7 +510,7 @@ def pinger(bot, update, args):
             try:
                 match = args[1].lower()
             except:
-                if args[0] not in ["all","delete"]:
+                if args[0] not in ["all", "delete"]:
                     p_username = username
                     match = args[0]
             if not p_username: raise
@@ -643,7 +643,7 @@ def cmd(bot, update, args):
             log_print('Usage of command', username)
             return
         else:
-            output = ['','']
+            output = ['', '']
             try:
                 command = subprocess.Popen(args, stdout=subprocess.PIPE)
                 output = list(command.communicate())
