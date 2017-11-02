@@ -31,7 +31,15 @@ from telegram.ext import (
 )
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from contextlib import contextmanager
-from sqlalchemy import *
+from sqlalchemy import (
+    create_engine,
+    literal,
+    and_,
+    or_,
+    MetaData,
+    Table,
+    Column
+)
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.exc import ResourceClosedError
 from sqlalchemy.orm import Session
