@@ -1,0 +1,86 @@
+---
+sudo: required
+language: python
+dist: trusty
+
+install:
+  - >
+    curl -sSL "https://get.docker.com/gpg" |
+     sudo -E apt-key add -
+  - >
+    echo "deb https://apt.dockerproject.org/repo ubuntu-trusty main" |
+     sudo tee -a /etc/apt/sources.list
+  - sudo apt-get update
+  - >
+    sudo apt-get -o Dpkg::Options::="--force-confdef" \
+     -o Dpkg::Options::="--force-confold" --assume-yes install --allow-unauthenticated docker-engine
+  - docker version
+  - sudo pip install docker-compose
+  - docker-compose version
+  - mkdir ./tokens
+  - mv .travis.tokens.py ./tokens/tokens.py
+  - echo "BOT_TOKEN = '${BOT_TOKEN}'" >> ./tokens/tokens.py
+
+before_script:
+  - docker login -u="$REGISTRY_USERNAME" -p="$REGISTRY_PASSWORD"
+
+script:
+  - docker-compose up --build -d
+
+after_script:
+  - docker-compose down
+
+after_success:
+  - >
+    if [ "$TRAVIS_BRANCH" == "master" ]; then
+        docker tag pybot cuttlerat/pybot;
+        docker push cuttlerat/pybot;
+        echo "Done";
+        if [ "$( curl -s $WEBHOOK )" != "" ]; then
+            TEXT=$( sed 's/^ \+//' <<< "
+            *${BUILD_ERROR}*
+            *Commit message:* ${TRAVIS_COMMIT_MESSAGE}
+            https://github.com/Cuttlerat/pybot/commit/${TRAVIS_COMMIT}" )
+            curl -s "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage"        \
+                    --max-time "10"                                               \
+                    --output /dev/null                                            \
+                    --data-urlencode "text=${TEXT}"                               \
+                              --data "chat_id=${BUILD_CHAT_ID}"                   \
+                              --data "parse_mode=markdown"                        ;
+        else
+            TEXT=$( sed 's/^ \+//' <<< "
+            *${BUILD_MASTER}*
+            *Commit message:* ${TRAVIS_COMMIT_MESSAGE}
+            https://github.com/Cuttlerat/pybot/commit/${TRAVIS_COMMIT}" )
+            curl -s "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage"        \
+                    --max-time "10"                                               \
+                    --output /dev/null                                            \
+                    --data-urlencode "text=${TEXT}"                               \
+                              --data "chat_id=${BUILD_CHAT_ID}"                   \
+                              --data "parse_mode=markdown"                        ;
+        fi
+    else
+        TEXT=$( sed 's/^ \+//' <<< "
+        *${BUILD_TEXT}*
+        *Commit message:* ${TRAVIS_COMMIT_MESSAGE}
+        https://github.com/Cuttlerat/pybot/commit/${TRAVIS_COMMIT}" )
+        curl -s "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage"            \
+                --max-time "10"                                                   \
+                --output /dev/null                                                \
+                --data-urlencode "text=${TEXT}"                                   \
+                          --data "chat_id=${BUILD_CHAT_ID}"                       \
+                          --data "parse_mode=markdown"                            ;
+    fi
+
+after_failure:
+  - >
+    TEXT=$( sed 's/^ \+//' <<< "
+    *${BUILD_ERROR}*
+    *Commit message:* ${TRAVIS_COMMIT_MESSAGE}
+    https://github.com/Cuttlerat/pybot/commit/${TRAVIS_COMMIT}" )
+    curl -s "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage"        \
+            --max-time "10"                                               \
+            --output /dev/null                                            \
+            --data-urlencode "text=${TEXT}"                               \
+                      --data "chat_id=${BUILD_CHAT_ID}"                   \
+                      --data "parse_mode=markdown"                        ;

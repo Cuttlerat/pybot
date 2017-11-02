@@ -1,19 +1,51 @@
 #!/usr/bin/env python3
+
+#===============================================================================
+#
+#    DESCRIPTION: Telegram bot in python
+#         AUTHOR: Kioller Alexey
+#         E-MAIL: avkioller@gmail.com
+#         GITHUB: https://github.com/Cuttlerat/pybot
+#        CREATED: 02.08.2017
+#
+#===============================================================================
+
+# Import {{{
 import json
 import requests
-import pytz 
+import pytz
 import sqlite3
 import logging
+import os
+import sys
+import errno
+import pyowm
+import subprocess
 
 from bs4 import BeautifulSoup
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+from contextlib import contextmanager
 from datetime import datetime
+from sqlalchemy import *
+from sqlalchemy.ext.automap import automap_base
+from sqlalchemy.exc import ResourceClosedError
+from sqlalchemy.orm import Session
+from sqlalchemy.orm.exc import NoResultFound
 from dateutil.tz import tzlocal
-from tokens import *
+from datetime import datetime, timedelta
+from tokens.tokens import *
+# }}}
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-#===========FUNCTIONS========================================================
+DATABASE = 'sqlite:///{}'.format(DATABASE_HOST)
+
+# ===========FUNCTIONS========================================================
+
 
 def start(bot, update):
 
@@ -22,446 +54,715 @@ def start(bot, update):
     You can see the code here https://github.com/Cuttlerat/pybot
     by @Cuttlerat
     '''
-    start_text = "\n".join([ i.strip() for i in start_text.split('\n') ])
-    bot.send_message(chat_id=update.message.chat_id, text = start_text)
+    start_text = "\n".join([i.strip() for i in start_text.split('\n')])
+    bot.send_message(chat_id=update.message.chat_id, text=start_text)
 
-#==== End of start function =================================================
+# ==== End of start function =================================================
 
-def get_emoji(emoji_code):
+
+def get_emoji(weather_status):
 
     emojis = {
-        '☀️':  [113],         # Sunny
-        '⛅️': [116],         # Partly cloudy
-        '🌥': [119],         # Cloudy
-        '☁️':  [122],         # Overcast
-        '🌩': [200],         # Thunder
-        '🌫': [143,248,260], # Fog
-        '🌦': [176,263,266,281,293,296,299,302,311,317,353,362],                 # Light Rain
-        '🌨': [179,182,185,227,230,323,326,329,332,335,338,350,368,371,374,377], # Snow
-        '🌧': [284,305,308,314,320,356,359,365],                                 # Heavy rain
-        '⛈':  [386,389,392,395]                                                  # Rain with thunder
-        }
+            'Clouds':       u'\U00002601',
+            'Clear':        u'\U00002600',
+            'Rain':         u'\U0001F327',
+            'Extreme':      u'\U0001F32A',
+            'Snow':         u'\U0001F328',
+            'Thunderstorm': u'\U000026C8',
+            'Mist':         u'\U0001F32B',
+            'Haze':         u'\U0001F324',
+            'notsure':      u'\U0001F648'
+    }
 
-    return("".join([i for i in emojis if emoji_code in [x for x in emojis[i]]]))
+    return("".join([emojis[i] for i in emojis if weather_status == i]))
 
-#==== End of get_emoji function =============================================
+# ==== End of get_emoji function =============================================
+
 
 def weather(bot, update, args):
 
-    conn = sqlite3.connect(DATABASE)
-    db = conn.cursor()
+    city = " ".join(args)
+    username = update.message.from_user.username
+
+    engine = create_engine(DATABASE)
+    Base = automap_base()
+    Base.prepare(engine, reflect=True)
+
+    locations = Base.classes.locations
+
+    if not city:
+        with connector(engine) as ses:
+            try:
+                city = ses.query(locations.city).filter(
+                    locations.username == username).one()
+                city = "".join([i for i in city])
+            except NoResultFound:
+                try:
+                    city = ses.query(locations.city).filter(
+                        locations.username == "default_city").one()
+                    city = "".join([i for i in city])
+                except NoResultFound:
+                    if username in ADMINS:
+                        error_message = '''
+                        You didn't set the default city
+                        You can add default city by this command:
+                        `/db insert into locations(username,city) \
+                        values(\"default_city\",\"YOUR CITY HERE\")`'''
+                        error_message = "\n".join(
+                            [i.strip() for i in error_message.split('\n')])
+                    else:
+                        error_message = "Administrator didn't set the default city\nTry /w City"
+                    bot.send_message(chat_id=update.message.chat_id,
+                                     parse_mode='markdown', text=error_message)
+                    return
 
     try:
-        db_check = db.execute('''
-        SELECT EXISTS(SELECT 1 FROM locations WHERE "{0}" LIKE locations.username) LIMIT 1
-        '''.format(update.message.from_user.username)).fetchone()
-        if 1 in db_check and not args:
-            city = ''.join(db.execute('''
-            SELECT city FROM locations WHERE "{0}" LIKE locations.username
-            '''.format(update.message.from_user.username)).fetchone())
-        else:
-            city = ' '.join(args) if args else ''.join(db.execute('''
-                                                SELECT city FROM locations WHERE username="default_city"
-                                                ''').fetchone())
+        owm = pyowm.OWM(WEATHER_TOKEN, language='en')
     except:
-        if update.message.from_user.username in ADMINS:
-            error_message = '''You didn't set the default city
-                               You can add default city by this command:
-                               `/manage insert into locations(username,city) values(\"default_city\",\"YOUR CITY HERE\")`'''
-            error_message = "\n".join([ i.strip() for i in error_message.split('\n') ])
-        else:
-            error_message = "Administrator didn't set the default city\nTry /w City"
-        bot.send_message(chat_id=update.message.chat_id, parse_mode = 'markdown', text = error_message )
-
-        # LOG
-        log_dict = {'timestamp': log_timestamp(), 
-                'error_message': "Wrong location", 
-                     'username': update.message.from_user.username }
-        print("{timestamp}: \"{error_message}\" by @{username}".format(**log_dict))
-        conn.commit()
-        db.close()
-        conn.close()
+        error_message = "Invalid API token"
+        bot.send_message(chat_id=update.message.chat_id, text=error_message)
+        log_print('Weather "{0}"'.format(error_message), username)
         return
-
-    conn.commit()
-    db.close()
-    conn.close()
-
-    w_params = {        'q': city, 
-                      'key': WEATHER_TOKEN, 
-                   'format': 'json', 
-                     'date': 'today', 
-                     'fx24': 'yes', 
-                     'lang': 'ru'            }
-
-    weather_api_bug = False
-
-    now_city = ""
-    while not now_city or now_city == "null":
-
-        w_response = requests.get('https://api.worldweatheronline.com/premium/v1/weather.ashx', w_params).json()
-        try:
-            now_city  = w_response["data"]["request"][0]["query"]
-        except KeyError:
-            now_city = ""
-        if (not now_city or now_city == "null") and weather_api_bug: break
-        if (not now_city or now_city == "null"): weather_api_bug = True
 
     try:
-        now_temp  = w_response["data"]["current_condition"][0]["temp_C"]
-        if now_temp[0] != '-': now_temp = '+' + now_temp
-    except KeyError:
-        error_message='Wrong location!'
-
-        bot.send_message(chat_id=update.message.chat_id, text = error_message )
-
-        # LOG
-        log_dict = {'timestamp': log_timestamp(), 
-                'error_message': "Wrong location", 
-                     'username': update.message.from_user.username }
-        print("{timestamp}: \"{error_message}\" by @{username}".format(**log_dict))
+        observation = owm.weather_at_place(city)
+    except pyowm.exceptions.not_found_error.NotFoundError:
+        error_message = "Wrong location"
+        bot.send_message(chat_id=update.message.chat_id, text=error_message)
+        log_print('"{0}"'.format(error_message), username)
         return
 
+    fc = owm.three_hours_forecast(city)
+    w = observation.get_weather()
+    city = observation.get_location().get_name()
 
-    now_comment = w_response["data"]["current_condition"][0]["lang_ru"][0]["value"]
+    weathers, tomorrow = {}, {}
 
-    now_time  = datetime.strptime(w_response["data"]["current_condition"][0]["observation_time"] + " 2017", '%I:%M %p %Y')
-    now_time  = pytz.timezone('Europe/Moscow').fromutc(now_time)
-    now_time  = "{:%H:%M}".format(now_time)
-    now_emoji = get_emoji(int(w_response["data"]["current_condition"][0]["weatherCode"]))
+    # Today
+    today = pyowm.timeutils.next_three_hours()
+    weather = fc.get_weather_at(today)
+    temp = str(round(weather.get_temperature(unit='celsius')["temp"]))
+    if temp[0] != '-' and temp != "0":
+        weathers["today", "temp", 0] = '+' + temp
+    else:
+        weathers["today", "temp", 0] = temp
+    weathers["today", "emoji", 0] = get_emoji(weather.get_status())
+    status = weather.get_detailed_status()
+    weathers["today", "status", 0] = status[0].upper() + status[1:]
 
-    weather = {}
-    for j in range(2):
-        for i in range(3):
-            weather[j,"temp",i]    = w_response["data"]["weather"][j]["hourly"][2+(i*3)]["tempC"]
-            if weather[j,"temp",i][0] != '-': weather[j,"temp",i] = '+' + weather[j,"temp",i]
-            weather[j,"emoji",i]   = get_emoji(int(w_response["data"]["weather"][j]["hourly"][2+(i*3)]["weatherCode"]))
-            weather[j,"comment",i] = w_response["data"]["weather"][j]["hourly"][2+(i*3)]["lang_ru"][0]["value"]
-    
-    message = ''.join("""
-    *Now:* 
-    *[{0}]:* {1} {2} {3}
-    {4}
+    # Tomorrow
+    for i in range(6, 19, 6):
+            weather = fc.get_weather_at(pyowm.timeutils.tomorrow(i, 0))
+            temp = str(round(weather.get_temperature('celsius')["temp"]))
+            if temp[0] != '-' and temp != "0":
+                weathers["tomorrow", "temp", i] = '+' + temp
+            else:
+                weathers["tomorrow", "temp", i] = temp
+            weathers["tomorrow", "emoji", i] = get_emoji(weather.get_status())
+            status = weather.get_detailed_status()
+            weathers["tomorrow", "status", i] = status[0].upper() + status[1:]
 
-    *Today:*
-    *Morning:* {5} {6} {7}
-    *Noon:* {8} {9} {10}
-    *Evening:* {11} {12} {13}
+    now_temp = str(round(w.get_temperature(unit='celsius')["temp"]))
+    if now_temp[0] != '-':
+        now_temp = '+' + now_temp
+    now_status = w.get_detailed_status()
+    now_status = now_status[0].upper() + now_status[1:]
+    now_emoji = get_emoji(w.get_status())
 
-    *Tommorow:* 
-    *Morning:* {14} {15} {16}
-    *Noon:* {17} {18} {19}
-    *Evening:* {20} {21} {22}
-    """.format(now_time,
-               now_temp,
-               now_emoji,
-               now_comment,
-               now_city,
-               *[ weather[i] for i in weather ] ))
-   
-    message = "\n".join([ k.strip() for k in message.split('\n') ])
-    
-    bot.send_message(chat_id=update.message.chat_id, parse_mode = "markdown", text = message )
+    try:
+        message = ''.join("""
+        *Now:*
+        *{0}:* {1} {2} {3}
 
-    # LOG
-    log_dict = {'timestamp': log_timestamp(), 
-                  'message': "Weather {0}".format(now_city), 
-                 'username': update.message.from_user.username }
-    print("{timestamp}: \"{message}\" by @{username}".format(**log_dict))
+        *In near future:*
+        {4} {5} {6}
 
-#==== End of weather function ===============================================
+        *Tomorrow:*
+        *Morning:* {7} {8} {9}
+        *Noon:* {10} {11} {12}
+        *Evening:* {13} {14} {15}
+        """.format(city,
+                   now_temp,
+                   now_emoji,
+                   now_status,
+                   *[weathers[i] for i in weathers]))
+    except IndexError:
+        error_message = "Something wrong with API:\n\n{}".format(weathers)
+        bot.send_message(chat_id=update.message.chat_id, text=error_message)
+        log_print('"{0}"'.format(error_message), username)
+        return
+
+    message = "\n".join([k.strip() for k in message.split('\n')])
+
+    bot.send_message(chat_id=update.message.chat_id,
+                     parse_mode="markdown", text=message)
+
+    log_print('Weather "{0}"'.format(city), username)
+
+# ==== End of weather function ===============================================
+
 
 def wset(bot, update, args):
 
-    city = "".join(args)
-    conn = sqlite3.connect(DATABASE)
-    db = conn.cursor()
+    city = " ".join(args)
+    username = update.message.from_user.username
 
-    db_check = db.execute('''
-    SELECT EXISTS(SELECT 1 FROM locations WHERE "{0}" LIKE locations.username) LIMIT 1
-    '''.format(update.message.from_user.username)).fetchone()
+    engine = create_engine(DATABASE)
+    Base = automap_base()
+    Base.prepare(engine, reflect=True)
 
-    if 1 in db_check:
-        if not city or city == "delete":
-            db.execute('''
-            DELETE FROM locations WHERE "{0}" LIKE locations.username
-            '''.format(update.message.from_user.username))
-            out_text = "Deleted information about @{0}".format(update.message.from_user.username)
-            city = 'deleted'
+    locations = Base.classes.locations
+
+    with connector(engine) as ses:
+        try:
+            ses.query(locations.username).filter(
+                locations.username == username).one()
+            if not city:
+                w_city = "".join(ses.query(locations.city).filter(
+                    locations.username == username).one())
+                out_text = "@{0} city is {1}".format(username, w_city)
+                city = 'deleted'
+            elif city == "delete":
+                ses.query(locations.username).filter(
+                    locations.username == username).delete()
+                out_text = "Deleted information about @{0}".format(username)
+                city = 'deleted'
+            else:
+                ses.query(locations).filter(
+                        locations.username == username).update({'city': city})
+                out_text = "New city for @{0}: {1}".format(username, city)
+
+        except NoResultFound:
+            if not city or city == "delete":
+                out_text = "Usage:\n/wset <city> - Set default city for /w\n/wset delete - Delete your default city".format(username)
+                city = 'none'
+            else:
+                new_location = locations(
+                    username=username,
+                    city=city)
+                ses.add(new_location)
+                out_text = "Added @{0}: {1}".format(username, city)
+
+    bot.send_message(chat_id=update.message.chat_id, text=out_text)
+    log_print('Wset "{0}"'.format(out_text))
+
+# ==== End of wset function ===============================================
+
+
+def random_content(bot, update, args):
+
+    MAX_QUOTES = 5
+
+    command = update.message.text.split()[0].replace('/', '')
+
+    def keyboard_markup(i, count, arg):
+        if i == count-1:
+            keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Another one!", callback_data='{}_1'.format(arg)),
+                                              InlineKeyboardButton("I NEED MORE!", callback_data='{}_5'.format(arg))],
+                                              [InlineKeyboardButton("No, thank you", callback_data='none')]])
         else:
-            db.execute('''
-            UPDATE locations SET city="{1}" WHERE username="{0}"
-            '''.format(update.message.from_user.username, city))
-            out_text = "New city for @{0}: {1}".format(update.message.from_user.username,city)
-    else:
-        if not city or "delete" in city:
-            out_text = "No informaton about @{0}".format(update.message.from_user.username)
-            city = 'none'
-        else:
-            db.execute('''
-            INSERT INTO locations(username, city) VALUES("{0}","{1}")
-            '''.format(update.message.from_user.username,city))
-            out_text = "Added @{0}: {1}".format(update.message.from_user.username,city)
+            keyboard = InlineKeyboardMarkup([[]])
+        return(keyboard)
 
-    conn.commit()
-    db.close()
-    conn.close()
-
-    bot.send_message( chat_id = update.message.chat_id, text = out_text )
-    log_dict = {'timestamp': log_timestamp(), 
-                     'city': city, 
-                 'username': update.message.from_user.username }
-    print("{timestamp}: wset {city} by @{username}".format(**log_dict))
-
-
-def ibash(bot, update, args):
-
+    if '@' in command:
+        command = command.split('@')[0]
     count = int(''.join(args)) if ''.join(args).isdigit() else 1
-    if count > 5: count = 5
+    if count > MAX_QUOTES:
+        count = MAX_QUOTES
 
     for i in range(count):
-        i_response = requests.get('http://ibash.org.ru/random.php').text
-        soup = BeautifulSoup(i_response, "html.parser")
-        
-        quote_id = soup.find_all("div", class_="quote")[0].a.get_text()
-        for br in soup.find_all("br"): 
-            br.replace_with("\n")
-        quote_text = soup.find("div", class_="quotbody").text
-        bot.send_message(chat_id = update.message.chat_id, text = quote_id+"\n"+quote_text+"\n", disable_web_page_preview = 1)
+        if command == "loglist":
+            l_raw_json = json.loads(requests.get(
+                'https://loglist.net/api/quote/random').text)
+            quote_id = l_raw_json['id']
+            quote_text = l_raw_json['content']
+            keyboard = keyboard_markup(i, count, 'loglist')
+            bot.send_message(chat_id=update.message.chat_id, text="```\n#" +
+                             quote_id + "\n" + quote_text + "\n```",
+                             parse_mode='markdown',
+                             reply_markup=keyboard,
+                             disable_web_page_preview=1)
+        elif command == "ibash":
+            i_response = requests.get('http://ibash.org.ru/random.php').text
+            soup = BeautifulSoup(i_response, "html.parser")
+            quote_id = soup.find_all("div", class_="quote")[0].a.get_text()
+            for br in soup.find_all("br"):
+                br.replace_with("\n")
+            quote_text = soup.find("div", class_="quotbody").text
+            keyboard = keyboard_markup(i, count, 'ibash')
+            bot.send_message(chat_id=update.message.chat_id, text="```\n" +quote_id +
+                             "\n" + quote_text + "\n```",
+                             parse_mode='markdown',
+                             reply_markup=keyboard,
+                             disable_web_page_preview=1)
+        elif command == "cat":
+            cat_url = ""
+            max_retries = 3
+            retries = 0
+            while not cat_url and retries < max_retries:
+                try:
+                    cat_url = requests.get('http://thecatapi.com/api/images/get?').url
+                except requests.exceptions.ConnectionError:
+                    pass
+                finally:
+                    retries += 1
+            keyboard = keyboard_markup(i, count, 'cat')
+            if cat_url.split('.')[-1] == 'gif':
+                bot.send_document(chat_id=update.message.chat_id, document=cat_url, reply_markup=keyboard)
+            else:
+                bot.send_photo(chat_id=update.message.chat_id, photo=cat_url, reply_markup=keyboard)
+        elif command == "dog":
+            dog_url = requests.get('https://dog.ceo/api/breeds/image/random').json()["message"]
+            dog_breed = dog_url.split('/')[-2].title()
+            keyboard = keyboard_markup(i, count, 'dog')
+            bot.send_photo(chat_id=update.message.chat_id, photo=dog_url, caption=dog_breed, reply_markup=keyboard)
 
-    # LOG
-    log_dict = {'timestamp': log_timestamp(), 
-                    'count': count, 
-                 'username': update.message.from_user.username }
-    print("{timestamp}: ibash {count} by @{username}".format(**log_dict))
+    log_print("{0} {1}".format(command, count), update.message.from_user.username)
 
-#==== End of ibash function =================================================
+# ==== End of random_content function ===============================================
 
-def loglist(bot, update, args):
-
-    #TODO Merge into one function with ibash
-    #     I need help with getting a what command was in message inside function to do that
-    count = int(''.join(args)) if ''.join(args).isdigit() else 1
-    if count > 5: count = 5
-
-    for i in range(count):
-        l_raw_json = json.loads(requests.get('https://loglist.net/api/quote/random').text)
-        quote_id   = l_raw_json['id']
-        quote_text = l_raw_json['content']
-        bot.send_message(chat_id = update.message.chat_id, text = "#"+quote_id+"\n"+quote_text+"\n", disable_web_page_preview = 1)
-
-    # LOG
-    log_dict = {'timestamp': log_timestamp(), 
-                    'count': count, 
-                 'username': update.message.from_user.username }
-    print("{timestamp}: loglist {count} by @{username}".format(**log_dict))
-
-#==== End of loglist function ===============================================
 
 def parser(bot, update):
 
-    in_text = update.message.text.lower().replace('ё','е')
-    conn = sqlite3.connect(DATABASE)
+    in_text = update.message.text.lower().replace('ё', 'е').replace(',', '').replace('.', '')
+    engine = create_engine(DATABASE)
+    Base = automap_base()
+    Base.prepare(engine, reflect=True)
 
-    # ------------ Google ----------------- 
-    try:
-        g_conn = sqlite3.connect(DATABASE)
-        g_db = g_conn.cursor()
-        out_text = ""
+    answers = Base.classes.answers
+    w_phrases = Base.classes.w_phrases
+    google_ignore = Base.classes.google_ignore
+    google = Base.classes.google
+    ping_phrases = Base.classes.ping_phrases
+    ping_exclude = Base.classes.ping_exclude
+    pingers = Base.classes.pingers
 
-        gi_db_check = g_db.execute('''
-        SELECT EXISTS(SELECT 1 FROM google_ignore WHERE "{0}" LIKE '%'||google_ignore.ignore||'%') LIMIT 1
-        '''.format(in_text)).fetchone()
-
-        if 0 in gi_db_check:
-            g_in_text = in_text.replace(",","").replace(".","")
-            g_db_check = g_db.execute('''
-            SELECT EXISTS(SELECT 1 FROM google WHERE "{0}" LIKE '%'||google.match||'%') LIMIT 1
-            '''.format(g_in_text)).fetchone()
-            if 1 in g_db_check:
-                matches = [ i for i in g_db.execute('''
-                    SELECT * FROM google WHERE "{0}" LIKE '%'||google.match||'%' 
-                    '''.format(g_in_text)).fetchall() for i in i ]
-
-                g_conn.commit()
-                g_db.close()
-                g_conn.close()
-
-                g_in_text = g_in_text.replace(sorted(matches, key=len)[-1],"")
-                
-                out_text = 'https://www.google.ru/search?q={0}'.format(g_in_text.strip().replace(" ","+"))
-
-                if out_text:
-                    bot.send_message( chat_id = update.message.chat_id, disable_web_page_preview = 1, text = out_text )
-                    log_dict = {'timestamp': log_timestamp(), 
-                                   'google': g_in_text.strip(),
-                                 'username': update.message.from_user.username }
-                    print('{timestamp}: Google "{google}" by @{username}'.format(**log_dict))
-                    return
-    except:
+    # ------------ Weather ----------------
+    with connector(engine) as ses:
         try:
-            g_conn.commit()
-            g_db.close()
-            g_conn.close()
-        except:
+            phrase = "".join(ses.query(w_phrases.match).filter(
+                literal(in_text.lower()).contains(w_phrases.match)).one())
+            weather(bot, update, in_text.lower()[in_text.lower().find(phrase)+len(phrase):].split())
             return
-        return
+        except NoResultFound:
+            pass
 
-    # ------------ Ping ----------------- 
-    try:
-        db = conn.cursor()
-        out_text = ""
-        db_check = db.execute('''
-        SELECT EXISTS(SELECT 1 FROM ping_phrases WHERE "{0}" LIKE '%'||ping_phrases.phrase||'%') LIMIT 1
-        '''.format(in_text)).fetchone()
+    # ------------ Google -----------------
+    with connector(engine) as ses:
+        try:
+            ses.query(google_ignore.ignore).filter(
+                literal(in_text).like('%' + google_ignore.ignore + '%')).one()
+        except NoResultFound:
+            matches = ses.query(google.match).filter(
+                literal(in_text).like(google.match + '%')).all()
+            matches = [i for i in matches for i in i]
+            if matches:
+                g_in_text = in_text.replace("?", "")
+                g_in_text = g_in_text.replace(
+                    sorted(matches, key=len)[-1], "").strip()
 
-        if 1 in db_check:
-            out_text = " ".join([ i for i in db.execute('''
-                SELECT DISTINCT username FROM pingers WHERE "{0}" LIKE '%'||pingers.match||'%'
-                '''.format(in_text)).fetchall() for i in i ])
-            if 'EVERYONE GET IN HERE' in out_text:
-                pingers_check = db.execute('''
-                    SELECT EXISTS(SELECT 1 FROM ping_exclude WHERE "{0}" LIKE '%'||ping_exclude.match||'%') LIMIT 1
-                    '''.format(in_text)).fetchone()
-                if 1 in pingers_check:
-                    out_text = " ".join([ i for i in db.execute('''
-                    SELECT DISTINCT username FROM pingers WHERE "{0} {1}" NOT LIKE '%'||username||'%'
-                    '''.format(update.message.from_user.username, out_text)).fetchall() for i in i ])
-                else:
-                    out_text = " ".join([ i for i in db.execute('''
-                    SELECT DISTINCT username FROM pingers WHERE pingers.username NOT LIKE "EVERYONE GET IN HERE" AND pingers.username NOT LIKE "{0}"
-                    '''.format(update.message.from_user.username)).fetchall() for i in i ])
+                if g_in_text:
+                    out_text = 'https://www.google.ru/search?q={0}'.format(
+                        g_in_text.replace(" ", "+"))
+                    bot.send_message(chat_id=update.message.chat_id,
+                                     disable_web_page_preview=1, text=out_text)
+                    log_print('Google "{0}"'.format(g_in_text.strip()),
+                               update.message.from_user.username)
+                return
+
+    # ------------ Ping -----------------
+    with connector(engine) as ses:
+        in_text_list = in_text.split()
+        username = update.message.from_user.username
+        chat_id = update.message.chat_id
+
+        try:
+            ses.query(ping_phrases.phrase).filter(
+                ping_phrases.phrase.in_(in_text_list)).one()
+            usernames = ses.query(pingers.username).filter(
+                and_(
+                    pingers.match.in_(in_text_list),
+                    or_(
+                        pingers.chat_id == chat_id,
+                        pingers.chat_id == "all")
+                )).distinct().all()
+            usernames = [i for i in usernames for i in i]
+            if 'EVERYONE GET IN HERE' in usernames:
+                try:
+                    ses.query(ping_exclude.match).filter(
+                        ping_exclude.match.in_(in_text_list)).one()
+                    usernames = ses.query(pingers.username).filter(
+                        and_(
+                            pingers.username.notin_(usernames),
+                            pingers.username != username,
+                            or_(
+                                pingers.chat_id == chat_id,
+                                pingers.chat_id == "all")
+                        )).distinct().all()
+                    usernames = [i for i in usernames for i in i]
+
+                except NoResultFound:
+                    usernames = ses.query(pingers.username).filter(
+                        and_(
+                            pingers.username != 'EVERYONE GET IN HERE',
+                            pingers.username != username,
+                            or_(
+                                pingers.chat_id == chat_id,
+                                pingers.chat_id == "all")
+                        )).distinct().all()
+                    usernames = [i for i in usernames for i in i]
+
+            if usernames:
+                out_text = " ".join(["@" + i for i in usernames])
+                bot.send_message(chat_id=update.message.chat_id, text=out_text)
+                log_print('Ping "{0}"'.format(out_text), username)
+        except NoResultFound:
+            pass
+
+    # ------------ Answer -----------------
+    with connector(engine) as ses:
+        out_text = ses.query(answers.string).filter(
+            literal(in_text).contains(answers.match))
+    for message in ["".join(i) for i in out_text]:
+        bot.send_message(chat_id=update.message.chat_id, text=message)
+        log_print("Answer", update.message.from_user.username)
 
 
-        conn.commit()
-        db.close()
-        conn.close()
+# ==== End of parser function ================================================
 
-        if out_text:
-            out_text = " ".join([ "@"+i for i in out_text.split(' ') ])
-            bot.send_message( chat_id = update.message.chat_id, text = out_text )
-            log_dict = {'timestamp': log_timestamp(), 
-                          'pingers': out_text, 
-                         'username': update.message.from_user.username }
-            print("{timestamp}: ping {pingers} by @{username}".format(**log_dict))
-    except:
-        conn.commit()
-        db.close()
-        conn.close()
-        return
-    # ------------ Answer ----------------- 
-    try:
-        a_conn = sqlite3.connect(DATABASE)
-        a_db = a_conn.cursor()
-        out_text = ""
+def db(bot, update, args):
 
-        a_db_check = a_db.execute('''
-        SELECT EXISTS(SELECT 1 FROM answers WHERE "{0}" LIKE '%'||answers.match||'%') LIMIT 1
-        '''.format(in_text)).fetchone()
-
-        if 1 in a_db_check:
-            out_text = [ i for i in a_db.execute('''
-                SELECT string FROM answers WHERE "{0}" LIKE '%'||answers.match||'%' 
-                '''.format(in_text)).fetchall() for i in i ]
-
-        a_conn.commit()
-        a_db.close()
-        a_conn.close()
-
-        for message in out_text:
-            bot.send_message( chat_id = update.message.chat_id, text = message )
-            log_dict = {'timestamp': log_timestamp(), 
-                         'username': update.message.from_user.username }
-            print("{timestamp}: Answer by @{username}".format(**log_dict))
-    except:
-        a_conn.commit()
-        a_db.close()
-        a_conn.close()
-        return
-
-
-#==== End of parser function ================================================
-
-def manage(bot, update, args):
-
-    if not update.message.from_user.username in ADMINS:
+    if update.message.from_user.username not in ADMINS:
         out_text = "You are not an administrator. The incident will be reported"
-        commans = "not an administrator"
+        command = "not an administrator"
     else:
         command = " ".join(args)
 
-        if command == ".schema": command = "SELECT sql FROM sqlite_master WHERE type = 'table'"
-        if command == ".tables": command = "SELECT name FROM sqlite_master WHERE type = 'table'"
+        if command == ".schema":
+            command = "SELECT sql FROM sqlite_master WHERE type = 'table'"
+        if command == ".tables":
+            command = "SELECT name FROM sqlite_master WHERE type = 'table'"
+        if "%%%chat_id%%%" in command:
+            command = command.replace(
+                "%%%chat_id%%%", str(update.message.chat_id))
 
-        conn = sqlite3.connect(DATABASE)
-        db = conn.cursor()
+        engine = create_engine(DATABASE)
+        connector = engine.connect()
 
         try:
-            out_text = "\n".join([ " - ".join(i) for i in db.execute(command).fetchall()])
-        except (sqlite3.OperationalError, sqlite3.IntegrityError):
+            out_text = "\n".join([" | ".join([str(i) for i in i])
+                                  for i in engine.execute(command).fetchall()])
+            connector.close()
+        except ResourceClosedError:
+            out_text = command = "Successfuly"
+            connector.close()
+        except:
             out_text = command = "Bad command"
+            connector.close()
 
     if out_text:
-        bot.send_message( chat_id = update.message.chat_id, text = out_text )
-        log_dict = {'timestamp': log_timestamp(), 
-                      'command': command, 
-                     'username': update.message.from_user.username }
-        print('{timestamp}: Manage "{command}" by @{username}'.format(**log_dict))
+        bot.send_message(chat_id=update.message.chat_id, text=out_text)
+        log_print('Manage "{0}"'.format(command), update.message.from_user.username)
 
-    conn.commit()
-    db.close()
-    conn.close()
 
-#==== End of manage function ================================================
+# ==== End of db function ================================================
+
+def pinger(bot, update, args):
+
+    chat_id = update.message.chat_id
+    username = update.message.from_user.username
+    args_line = " ".join(args)
+
+    engine = create_engine(DATABASE)
+    Base = automap_base()
+    Base.prepare(engine, reflect=True)
+    pingers = Base.classes.pingers
+
+    if username in ADMINS:
+        try:
+            p_username = args[0]
+            try:
+                match = args[1].lower()
+            except:
+                if args[0] not in ["all","delete"]:
+                    p_username = username
+                    match = args[0]
+            if not p_username: raise
+        except:
+            usage_text = "Usage: \n`/ping username <word>`\n`/ping all`\n`/ping delete username <word>`"
+            bot.send_message(chat_id=update.message.chat_id,
+                             parse_mode='markdown',
+                             text=usage_text)
+            return
+        with connector(engine) as ses:
+            try:
+                if p_username == "all":
+                    all_matches = ses.query(pingers).filter(pingers.chat_id == chat_id).all()
+                    out_text = ""
+                    for match in all_matches:
+                        out_text += "\n{} | {}".format(match.username, match.match)
+                    bot.send_message(chat_id=update.message.chat_id,
+                                     text=out_text)
+                elif p_username == "delete":
+                    try:
+                        p_username = args[1]
+                        try:
+                            delete_match = args[2].lower()
+                        except:
+                            p_username = username
+                            delete_match = args[1].lower()
+                    except:
+                        out_text = "Usage `/ping delete username <word>`"
+                        bot.send_message(chat_id=update.message.chat_id,
+                                         parse_mode='markdown',
+                                         text=out_text)
+                        return
+                    ses.query(pingers).filter(and_(
+                           pingers.chat_id == chat_id,
+                           pingers.username == p_username,
+                           pingers.match == delete_match)).delete()
+                    bot.send_message(chat_id=update.message.chat_id,
+                                     text="Deleted")
+                    log_print('Delete pinger "{0}"'.format(args_line), username)
+                else:
+                    with connector(engine) as ses:
+                        new_pinger = pingers(
+                            username=p_username,
+                            match=match,
+                            chat_id=chat_id)
+                        ses.add(new_pinger)
+                    bot.send_message(chat_id=update.message.chat_id,
+                                     text="Successfuly added")
+                    log_print('Added pinger "{0}"'.format(args_line), username)
+            except:
+                bot.send_message(chat_id=update.message.chat_id,
+                                 text="There was some trouble")
+                log_print('Error while add pinger "{0}"'.format(args_line), username)
+    else:
+        try:
+            try:
+                user_match = args[0].lower()
+                if not user_match: raise
+            except:
+                out_text = "Usage: \n`/ping <word>`\n`/ping all`\n`/ping delete <word>`"
+                bot.send_message(chat_id=update.message.chat_id,
+                                 parse_mode='markdown',
+                                 text=out_text)
+                return
+            with connector(engine) as ses:
+                if user_match == "all":
+                    all_matches = ses.query(pingers).filter(and_(
+                                  pingers.chat_id == chat_id,
+                                  pingers.username == username)).all()
+                    out_text = ""
+                    for match in all_matches:
+                        out_text += "\n{} | {}".format(match.username, match.match)
+                    bot.send_message(chat_id=update.message.chat_id,
+                                     text=out_text)
+                elif user_match == "delete":
+                    try:
+                        delete_match = args[1].lower()
+                    except:
+                        out_text = "Usage `/ping delete <word>`"
+                        bot.send_message(chat_id=update.message.chat_id,
+                                         parse_mode='markdown',
+                                         text=out_text)
+                        return
+                    ses.query(pingers).filter(and_(
+                              pingers.chat_id == chat_id,
+                              pingers.username == username,
+                              pingers.match == delete_match)).delete()
+                    bot.send_message(chat_id=update.message.chat_id,
+                                     text="Deleted")
+                    log_print('Delete pinger "{0}"'.format(args_line))
+
+                else:
+                    count = ses.query(pingers).filter(and_(
+                                pingers.chat_id == chat_id,
+                                pingers.username == username)).count()
+                    if count < 10:
+                        new_pinger = pingers(
+                            username=username,
+                            match=user_match,
+                            chat_id=chat_id)
+                        ses.add(new_pinger)
+                        bot.send_message(chat_id=update.message.chat_id,
+                                         text="Successfuly added")
+                        log_print('Added pinger "{0}"'.format(args_line), username)
+                    else:
+                        bot.send_message(chat_id=update.message.chat_id,
+                                         text="You can add only 10 matches")
+                        log_print('Pinger limit is settled', username)
+        except:
+            bot.send_message(chat_id=update.message.chat_id,
+                             text="There was some trouble")
+            log_print('Error while add pinger "{0}"'.format(args_line), username)
+
+# ==== End of pinger function ================================================
+
+
+def cmd(bot, update, args):
+
+    username = update.message.from_user.username
+    if username not in ADMINS:
+        bot.send_message(chat_id=update.message.chat_id,
+                         text="You are not allowed to use this command")
+        log_print('Try of command', username)
+        return
+    else:
+        if not args:
+            bot.send_message(chat_id=update.message.chat_id,
+                             text="Usage `/cmd command`",
+                             parse_mode='markdown')
+            log_print('Usage of command', username)
+            return
+        else:
+            output = ['','']
+            try:
+                command = subprocess.Popen(args, stdout=subprocess.PIPE)
+                output = list(command.communicate())
+            except FileNotFoundError:
+                output[0] = b'\n'
+                output[1] = b'No such command\n'
+            for i in range(len(output)):
+                try:
+                    output[i] = output[i].decode("utf-8")
+                except AttributeError:
+                    output[i] = ""
+            bot.send_message(chat_id=update.message.chat_id,
+                             text="*Output:*\n```\n{0}```*Errors:*\n```\n{1}```".format(*output),
+                             parse_mode='markdown')
+            log_print('Command "{0}"'.format(" ".join(args)), username)
+
+# ==== End of cmd function ===================================================
+
 
 def create_table():
 
-    db_check_file = open(DATABASE, 'r+')
-    db_check_file.close()
+    flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY
 
-    conn = sqlite3.connect(DATABASE)
-    db = conn.cursor()
-
-    tables = [
-        "CREATE TABLE pingers(username varchar(255), match varchar(255) PRIMARY KEY)",
-        "CREATE TABLE ping_phrases(phrase varchar(255) PRIMARY KEY)",
-        "CREATE TABLE google_ignore(ignore varchar(255) PRIMARY KEY)",
-        "CREATE TABLE google(match varchar(255) PRIMARY KEY)",
-        "CREATE TABLE locations(username varchar(255) PRIMARY KEY, city varchar(255))",
-        "CREATE TABLE answers(match varchar(255) PRIMARY KEY, string varchar(255))",
-        "CREATE TABLE ping_exclude(match varchar(255) PRIMARY KEY)"
-        ]
-
-    for command in tables:
-        try: 
-            db.execute(command)
-        except sqlite3.OperationalError:
+    try:
+        db_check_file = os.open(DATABASE_HOST, flags)
+    except OSError as e:
+        if e.errno == errno.EEXIST:
             pass
+        else:
+            raise
+    else:
+        os.fdopen(db_check_file, 'w')
 
-    conn.commit()
-    db.close()
-    conn.close()
+    engine = create_engine(DATABASE)
+    metadata = MetaData(engine)
 
-def log_timestamp():
-    return(datetime.now(tzlocal()).strftime("[%d/%b/%Y:%H:%M:%S %z]"))
+    pingers = Table('pingers', metadata,
+                    Column('id', Integer, primary_key=True, autoincrement=True),
+                    Column('username', Unicode(255)),
+                    Column('chat_id', Unicode(255)),
+                    Column('match', Unicode(255)))
 
-#============================================================================
+    ping_phrases = Table('ping_phrases', metadata,
+                         Column('phrase', Unicode(255), primary_key=True))
 
-print('{}: Started'.format(log_timestamp()))
+    google_ignore = Table('google_ignore', metadata,
+                          Column('ignore', Unicode(255), primary_key=True))
 
-create_table()
+    google = Table('google', metadata,
+                   Column('match', Unicode(255), primary_key=True))
 
-updater    = Updater(token=BOT_TOKEN)
-dispatcher = updater.dispatcher
+    locations = Table('locations', metadata,
+                      Column('username', Unicode(255), primary_key=True),
+                      Column('city', Unicode(255)))
 
-dispatcher.add_handler(CommandHandler('start', start))
-dispatcher.add_handler(CommandHandler('info', start))
-dispatcher.add_handler(CommandHandler('weather', weather, pass_args=True))
-dispatcher.add_handler(CommandHandler('w', weather, pass_args=True))
-dispatcher.add_handler(CommandHandler('wset', wset, pass_args=True))
-dispatcher.add_handler(CommandHandler('ibash', ibash, pass_args=True))
-dispatcher.add_handler(CommandHandler('loglist', loglist, pass_args=True))
-dispatcher.add_handler(CommandHandler('manage', manage, pass_args=True))
-dispatcher.add_handler(MessageHandler(Filters.text, parser))
+    w_phrases = Table('w_phrases', metadata,
+                      Column('match', Unicode(255), primary_key=True))
 
-updater.start_polling()
+    answers = Table('answers', metadata,
+                    Column('match', Unicode(255), primary_key=True),
+                    Column('string', Unicode(255)))
+
+    ping_exclude = Table('ping_exclude', metadata,
+                         Column('match', Unicode(255), primary_key=True))
+
+    metadata.create_all()
+
+# ==== End of create_table function ===============================================
+
+
+def buttons(bot, update):
+    query = update.callback_query
+    keyboard = InlineKeyboardMarkup([[]])
+    bot.edit_message_reply_markup(chat_id=query.message.chat_id,
+                                  message_id=query.message.message_id,
+                                  reply_markup=keyboard)
+    if query.data in ['cat_1', 'cat_5',
+                      'dog_1', 'dog_5',
+                      'ibash_1', 'ibash_5',
+                      'loglist_1', 'loglist_5']:
+        command, value = query.data.split('_')
+        query.message.text = '/{}'.format(command)
+        random_content(bot,query,[value])
+
+# ==== End of buttons function ===============================================
+
+
+def log_print(message, *username):
+    timestamp = datetime.now(tzlocal()).strftime("[%d/%b/%Y:%H:%M:%S %z]")
+    if not username:
+        print("{0}: {1}".format(timestamp, message))
+    else:
+        print("{0}: {1} by @{2}".format(timestamp, message, "".join(username)))
+
+
+@contextmanager
+def connector(engine):
+    session = Session(engine)
+    try:
+        yield session
+        session.commit()
+    except:
+        error = str(sys.exc_info())
+        print("Error is: ", error)
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+# ============================================================================
+
+
+log_print('Started')
+
+try:
+    create_table()
+
+    updater = Updater(token=BOT_TOKEN)
+    dispatcher = updater.dispatcher
+
+    [dispatcher.add_handler(i) for i in [
+        CommandHandler(['start', 'info'], start),
+        CommandHandler(['weather', 'w'], weather, pass_args=True),
+        CommandHandler(['ibash', 'loglist', 'cat', 'dog'], random_content, pass_args=True),
+        CommandHandler('cmd', cmd, pass_args=True),
+        CommandHandler('wset', wset, pass_args=True),
+        CommandHandler('db', db, pass_args=True),
+        CommandHandler('ping', pinger, pass_args=True),
+        CallbackQueryHandler(buttons),
+        MessageHandler(Filters.text, parser)
+    ]]
+
+    if MODE.lower() == 'webhook':
+        try:
+            LISTEN_IP
+        except NameError:
+            LISTEN_IP = "0.0.0.0"
+        updater.start_webhook(listen=LISTEN_IP,
+                              port=WEBHOOK_PORT,
+                              url_path=BOT_TOKEN)
+        updater.bot.set_webhook(WEBHOOK_URL)
+        updater.idle()
+    else:
+        updater.start_polling()
+except sqlite3.ProgrammingError:
+    pass
+
+# vim: set fdm=marker:
