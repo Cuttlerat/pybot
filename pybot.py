@@ -30,8 +30,6 @@ from telegram.ext import (
     CallbackQueryHandler
 )
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
 from contextlib import contextmanager
 from sqlalchemy import *
 from sqlalchemy.ext.automap import automap_base
@@ -39,7 +37,7 @@ from sqlalchemy.exc import ResourceClosedError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import NoResultFound
 from dateutil.tz import tzlocal
-from datetime import datetime, timedelta
+from datetime import datetime
 from tokens.tokens import *
 # }}}
 
