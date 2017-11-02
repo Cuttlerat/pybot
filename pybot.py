@@ -160,7 +160,7 @@ def weather(bot, update, args):
     w = observation.get_weather()
     city = observation.get_location().get_name()
 
-    weathers, tomorrow = {}, {}
+    weathers = {}
 
     # Today
     today = pyowm.timeutils.next_three_hours()
