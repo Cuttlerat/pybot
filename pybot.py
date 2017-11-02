@@ -38,7 +38,15 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import NoResultFound
 from dateutil.tz import tzlocal
 from datetime import datetime
-from tokens.tokens import *
+from tokens.tokens import (
+    BOT_TOKEN,
+    WEATHER_TOKEN,
+    DATABASE_HOST,
+    ADMINS,
+    MODE,
+    WEBHOOK_PORT,
+    WEBHOOK_URL
+)
 # }}}
 
 logging.basicConfig(
