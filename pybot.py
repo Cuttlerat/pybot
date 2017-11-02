@@ -283,7 +283,7 @@ def random_content(bot, update, args):
         if i == count-1:
             keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Another one!", callback_data='{}_1'.format(arg)),
                                               InlineKeyboardButton("I NEED MORE!", callback_data='{}_5'.format(arg))],
-                                              [InlineKeyboardButton("No, thank you", callback_data='none')]])
+                                             [InlineKeyboardButton("No, thank you", callback_data='none')]])
         else:
             keyboard = InlineKeyboardMarkup([[]])
         return(keyboard)
@@ -390,8 +390,10 @@ def parser(bot, update):
                         g_in_text.replace(" ", "+"))
                     bot.send_message(chat_id=update.message.chat_id,
                                      disable_web_page_preview=1, text=out_text)
-                    log_print('Google "{0}"'.format(g_in_text.strip()),
-                               update.message.from_user.username)
+                    log_print(
+                        'Google "{0}"'.format(g_in_text.strip()),
+                        update.message.from_user.username
+                    )
                 return
 
     # ------------ Ping -----------------
