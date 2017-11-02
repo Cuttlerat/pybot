@@ -37,6 +37,8 @@ from sqlalchemy import (
     and_,
     or_,
     MetaData,
+    Unicode,
+    Integer,
     Table,
     Column
 )
