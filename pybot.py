@@ -726,7 +726,7 @@ def buttons(bot, update):
                       'loglist_1', 'loglist_5']:
         command, value = query.data.split('_')
         query.message.text = '/{}'.format(command)
-        random_content(bot,query,[value])
+        random_content(bot, query, [value])
 
 # ==== End of buttons function ===============================================
 
