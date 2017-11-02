@@ -13,7 +13,6 @@
 # Import {{{
 import json
 import requests
-import pytz
 import sqlite3
 import logging
 import os
