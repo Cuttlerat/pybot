@@ -22,7 +22,13 @@ import pyowm
 import subprocess
 
 from bs4 import BeautifulSoup
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
+from telegram.ext import (
+    Updater,
+    CommandHandler,
+    MessageHandler,
+    Filters,
+    CallbackQueryHandler
+)
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
