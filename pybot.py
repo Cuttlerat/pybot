@@ -47,6 +47,10 @@ from tokens.tokens import (
     WEBHOOK_PORT,
     WEBHOOK_URL
 )
+try:
+    from tokens.tokens import LISTEN_IP
+except ImportError:
+    pass
 # }}}
 
 logging.basicConfig(
