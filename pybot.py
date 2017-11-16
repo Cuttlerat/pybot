@@ -13,7 +13,6 @@
 # Import {{{
 import json
 import requests
-import pytz
 import sqlite3
 import logging
 import os
@@ -23,24 +22,55 @@ import pyowm
 import subprocess
 
 from bs4 import BeautifulSoup
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
+from telegram.ext import (
+    Updater,
+    CommandHandler,
+    MessageHandler,
+    Filters,
+    CallbackQueryHandler
+)
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
 from contextlib import contextmanager
-from datetime import datetime
-from sqlalchemy import *
+from sqlalchemy import (
+    create_engine,
+    literal,
+    and_,
+    or_,
+    MetaData,
+    Unicode,
+    Integer,
+    Table,
+    Column
+)
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.exc import ResourceClosedError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import NoResultFound
 from dateutil.tz import tzlocal
-from datetime import datetime, timedelta
+from datetime import datetime
 from tokens.tokens import *
+'''
+# Fuck off kosc with your clean code. I wanna be a codemonkey!
+from tokens.tokens import (
+    BOT_TOKEN,
+    WEATHER_TOKEN,
+    DATABASE_HOST,
+    ADMINS,
+    MODE,
+    WEBHOOK_PORT,
+    WEBHOOK_URL
+)
+'''
+try:
+    from tokens.tokens import LISTEN_IP
+except ImportError:
+    pass
 # }}}
 
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
 
 DATABASE = 'sqlite:///{}'.format(DATABASE_HOST)
 
@@ -136,7 +166,7 @@ def weather(bot, update, args):
     w = observation.get_weather()
     city = observation.get_location().get_name()
 
-    weathers, tomorrow = {}, {}
+    weathers = {}
 
     # Today
     today = pyowm.timeutils.next_three_hours()
@@ -259,7 +289,7 @@ def random_content(bot, update, args):
         if i == count-1:
             keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Another one!", callback_data='{}_1'.format(arg)),
                                               InlineKeyboardButton("I NEED MORE!", callback_data='{}_5'.format(arg))],
-                                              [InlineKeyboardButton("No, thank you", callback_data='none')]])
+                                             [InlineKeyboardButton("No, thank you", callback_data='none')]])
         else:
             keyboard = InlineKeyboardMarkup([[]])
         return(keyboard)
@@ -290,7 +320,7 @@ def random_content(bot, update, args):
                 br.replace_with("\n")
             quote_text = soup.find("div", class_="quotbody").text
             keyboard = keyboard_markup(i, count, 'ibash')
-            bot.send_message(chat_id=update.message.chat_id, text="```\n" +quote_id +
+            bot.send_message(chat_id=update.message.chat_id, text="```\n" + quote_id +
                              "\n" + quote_text + "\n```",
                              parse_mode='markdown',
                              reply_markup=keyboard,
@@ -366,8 +396,10 @@ def parser(bot, update):
                         g_in_text.replace(" ", "+"))
                     bot.send_message(chat_id=update.message.chat_id,
                                      disable_web_page_preview=1, text=out_text)
-                    log_print('Google "{0}"'.format(g_in_text.strip()),
-                               update.message.from_user.username)
+                    log_print(
+                        'Google "{0}"'.format(g_in_text.strip()),
+                        update.message.from_user.username
+                    )
                 return
 
     # ------------ Ping -----------------
@@ -484,7 +516,7 @@ def pinger(bot, update, args):
             try:
                 match = args[1].lower()
             except:
-                if args[0] not in ["all","delete"]:
+                if args[0] not in ["all", "delete"]:
                     p_username = username
                     match = args[0]
             if not p_username: raise
@@ -601,6 +633,19 @@ def pinger(bot, update, args):
 # ==== End of pinger function ================================================
 
 
+def bug(bot, update):
+    bug_text = '''
+    *Found a bug?*
+    Please report it here: https://github.com/Cuttlerat/pybot/issues/new
+    '''
+    bug_text = "\n".join([i.strip() for i in bug_text.split('\n')])
+    bot.send_message(chat_id=update.message.chat_id,
+                     text=bug_text,
+                     parse_mode='markdown')
+
+# ==== End of bug function ===================================================
+
+
 def cmd(bot, update, args):
 
     username = update.message.from_user.username
@@ -617,7 +662,7 @@ def cmd(bot, update, args):
             log_print('Usage of command', username)
             return
         else:
-            output = ['','']
+            output = ['', '']
             try:
                 command = subprocess.Popen(args, stdout=subprocess.PIPE)
                 output = list(command.communicate())
@@ -700,7 +745,7 @@ def buttons(bot, update):
                       'loglist_1', 'loglist_5']:
         command, value = query.data.split('_')
         query.message.text = '/{}'.format(command)
-        random_content(bot,query,[value])
+        random_content(bot, query, [value])
 
 # ==== End of buttons function ===============================================
 
@@ -739,9 +784,13 @@ try:
     dispatcher = updater.dispatcher
 
     [dispatcher.add_handler(i) for i in [
+        CommandHandler('bug', bug),
         CommandHandler(['start', 'info'], start),
         CommandHandler(['weather', 'w'], weather, pass_args=True),
-        CommandHandler(['ibash', 'loglist', 'cat', 'dog'], random_content, pass_args=True),
+        CommandHandler(
+            ['ibash', 'loglist', 'cat', 'dog'],
+            random_content, pass_args=True
+        ),
         CommandHandler('cmd', cmd, pass_args=True),
         CommandHandler('wset', wset, pass_args=True),
         CommandHandler('db', db, pass_args=True),
