@@ -127,7 +127,7 @@ But what if you want to call everyone except one guy?
 You will need to add a ping exclude phrase
 
 ```sql
-/db INSERT INTO ping_exclude(match) VALUES("excpet")
+/db INSERT INTO ping_exclude(match) VALUES("except")
 Cuttlerat: ping all except kosc
 Cuttlebot: @Cuttlerat
 ```
