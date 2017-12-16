@@ -15,7 +15,7 @@ services:
         volumes:
           - ./data:/pybot/data
           - ./tokens:/pybot/tokens:ro
-        restart: unless-stopped
+        restart: always
         depends_on:
           - pybot_prebuild
 
@@ -27,4 +27,4 @@ services:
         volumes:
           - .:/pybot
           - /var/run/docker.sock:/var/run/docker.sock
-        restart: unless-stopped
+        restart: always
