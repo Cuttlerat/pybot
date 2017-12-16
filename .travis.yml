@@ -22,7 +22,7 @@ install:
   - echo "BOT_TOKEN = '${BOT_TOKEN}'" >> ./tokens/tokens.py
 
 before_script:
-  - docker login -u="$REGISTRY_USERNAME" -p="$REGISTRY_PASSWORD"
+  - docker login -u "$REGISTRY_USERNAME" -p "$REGISTRY_PASSWORD"
 
 script:
   - docker-compose up --build -d
