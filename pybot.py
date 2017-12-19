@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
 
+#!/usr/bin/env python3
 #===============================================================================
 #
 #    DESCRIPTION: Telegram bot in python
@@ -419,7 +419,7 @@ def parser(bot, update):
                         pingers.chat_id == "all")
                 )).distinct().all()
             usernames = [i for i in usernames for i in i]
-            if ['EVERYONE GET IN HERE'] == usernames:
+            if 'EVERYONE GET IN HERE' in usernames:
                 try:
                     ses.query(ping_exclude.match).filter(
                         ping_exclude.match.in_(in_text_list)).one()
@@ -434,15 +434,16 @@ def parser(bot, update):
                     usernames = [i for i in usernames for i in i]
 
                 except NoResultFound:
-                    usernames = ses.query(pingers.username).filter(
-                        and_(
-                            pingers.username != 'EVERYONE GET IN HERE',
-                            pingers.username != username,
-                            or_(
-                                pingers.chat_id == chat_id,
-                                pingers.chat_id == "all")
-                        )).distinct().all()
-                    usernames = [i for i in usernames for i in i]
+                    if ['EVERYONE GET IN HERE'] == usernames:
+                        usernames = ses.query(pingers.username).filter(
+                            and_(
+                                pingers.username != 'EVERYONE GET IN HERE',
+                                pingers.username != username,
+                                or_(
+                                    pingers.chat_id == chat_id,
+                                    pingers.chat_id == "all")
+                            )).distinct().all()
+                        usernames = [i for i in usernames for i in i]
 
             if usernames:
                 if 'EVERYONE GET IN HERE' in usernames:
