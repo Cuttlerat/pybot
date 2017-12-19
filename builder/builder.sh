@@ -3,8 +3,7 @@
 function _log_echo {
 
                date +"[%d/%b/%Y:%H:%M:%S %z]: $1" 1>&2
-
-}    # ----------  end of function _log_echo  ----------
+}
 
 cd /pybot
 
@@ -25,7 +24,6 @@ while :; do
     docker-compose restart pybot &>/dev/null     \
         && _log_echo "Restarted"                 \
         || _log_echo "Error while restarting"
-
 
 done
 
