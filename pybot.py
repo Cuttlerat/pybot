@@ -697,38 +697,13 @@ def create_table():
         os.fdopen(db_check_file, 'w')
 
     engine = create_engine(DATABASE)
-    metadata = MetaData(engine)
+    raw_conn = engine.raw_connection()
+    cursor = raw_conn.cursor()
+    sql = open("./init.sql", "r").read()
+    cursor.executescript(sql)
+    cursor.close()
+    raw_conn.close()
 
-    pingers = Table('pingers', metadata,
-                    Column('id', Integer, primary_key=True, autoincrement=True),
-                    Column('username', Unicode(255)),
-                    Column('chat_id', Unicode(255)),
-                    Column('match', Unicode(255)))
-
-    ping_phrases = Table('ping_phrases', metadata,
-                         Column('phrase', Unicode(255), primary_key=True))
-
-    google_ignore = Table('google_ignore', metadata,
-                          Column('ignore', Unicode(255), primary_key=True))
-
-    google = Table('google', metadata,
-                   Column('match', Unicode(255), primary_key=True))
-
-    locations = Table('locations', metadata,
-                      Column('username', Unicode(255), primary_key=True),
-                      Column('city', Unicode(255)))
-
-    w_phrases = Table('w_phrases', metadata,
-                      Column('match', Unicode(255), primary_key=True))
-
-    answers = Table('answers', metadata,
-                    Column('match', Unicode(255), primary_key=True),
-                    Column('string', Unicode(255)))
-
-    ping_exclude = Table('ping_exclude', metadata,
-                         Column('match', Unicode(255), primary_key=True))
-
-    metadata.create_all()
 
 # ==== End of create_table function ===============================================
 
