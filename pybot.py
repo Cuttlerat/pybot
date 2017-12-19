@@ -419,7 +419,7 @@ def parser(bot, update):
                         pingers.chat_id == "all")
                 )).distinct().all()
             usernames = [i for i in usernames for i in i]
-            if 'EVERYONE GET IN HERE' in usernames:
+            if ['EVERYONE GET IN HERE'] == usernames:
                 try:
                     ses.query(ping_exclude.match).filter(
                         ping_exclude.match.in_(in_text_list)).one()
@@ -445,6 +445,8 @@ def parser(bot, update):
                     usernames = [i for i in usernames for i in i]
 
             if usernames:
+                if 'EVERYONE GET IN HERE' in usernames:
+                    usernames.remove('EVERYONE GET IN HERE')
                 out_text = " ".join(["@" + i for i in usernames])
                 bot.send_message(chat_id=update.message.chat_id, text=out_text)
                 log_print('Ping "{0}"'.format(out_text), username)
