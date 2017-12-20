@@ -449,7 +449,7 @@ def parser(bot, update):
                 if 'EVERYONE GET IN HERE' in usernames:
                     usernames.remove('EVERYONE GET IN HERE')
                 out_text = " ".join(["@" + i for i in usernames])
-                bot.send_message(chat_id=update.message.chat_id, text=out_text)
+                bot.send_message(chat_id=update.message.chat_id, reply_to_message_id=update.message.message_id, text=out_text)
                 log_print('Ping "{0}"'.format(out_text), username)
         except NoResultFound:
             pass
