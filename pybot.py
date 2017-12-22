@@ -79,12 +79,11 @@ DATABASE = 'sqlite:///{}'.format(DATABASE_HOST)
 
 def start(bot, update):
 
-    start_text = '''
-    This is my first bot on Python.
-    You can see the code here https://github.com/Cuttlerat/pybot
-    by @Cuttlerat
-    '''
-    start_text = "\n".join([i.strip() for i in start_text.split('\n')])
+    start_text = (
+        "This is my first bot on Python.\n"
+        "You can see the code here https://github.com/Cuttlerat/pybot\n"
+        "by @Cuttlerat"
+    )
     bot.send_message(chat_id=update.message.chat_id, text=start_text)
 
 # ==== End of start function =================================================
