@@ -5,17 +5,18 @@ This is my first telegram bot written in Python
 ## Commands
 
 ```
-/weather <City>     - Weather in a city for now, today and tommorow
-/w <City>           - Short form of /w
-/info               - Information about this bot
-/wset <City>        - Set default city for /weather
-/ibash <Number>     - Random quote from ibash.org.ru
-/loglist <Number>   - Random quote from loglist.net
+/bug                - Link to create issue on github
 /cat <Number>       - Random cat photo from Tumbler
+/db <SQL query>     - Manage your database (Only for admins)
 /dog <Number>       - Random dog photo from dog.ceo
+/ibash <Number>     - Random quote from ibash.org.ru
+/info               - Information about this bot
+/loglist <Number>   - Random quote from loglist.net
 /ping               - Show usage of pinger command wich allow to
                     + add ping phrases for user who call this command
-/db <SQL query>     - Manage your database (Only for admins)
+/w <City>           - Short form of /w
+/weather <City>     - Weather in a city for now, today and tommorow
+/wset <City>        - Set default city for /weather
 ```
 
 ## Starting
