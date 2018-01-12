@@ -180,19 +180,19 @@ def weather(bot, update, args):
     weathers["today", "status", 0] = status[0].upper() + status[1:]
 
     # Tomorrow
-    for i in range(6, 19, 6):
-            weather = fc.get_weather_at(pyowm.timeutils.tomorrow(i, 0))
-            temp = str(round(weather.get_temperature('celsius')["temp"]))
-            if temp[0] != '-' and temp != "0":
-                weathers["tomorrow", "temp", i] = '+' + temp
-            else:
-                weathers["tomorrow", "temp", i] = temp
-            weathers["tomorrow", "emoji", i] = get_emoji(weather.get_status())
-            status = weather.get_detailed_status()
-            weathers["tomorrow", "status", i] = status[0].upper() + status[1:]
+    for i in [6, 12, 18]:
+        weather = fc.get_weather_at(pyowm.timeutils.tomorrow(i, 0))
+        temp = str(round(weather.get_temperature('celsius')["temp"]))
+        if temp[0] != '-' and temp != "0":
+            weathers["tomorrow", "temp", i] = '+' + temp
+        else:
+            weathers["tomorrow", "temp", i] = temp
+        weathers["tomorrow", "emoji", i] = get_emoji(weather.get_status())
+        status = weather.get_detailed_status()
+        weathers["tomorrow", "status", i] = status[0].upper() + status[1:]
 
     now_temp = str(round(w.get_temperature(unit='celsius')["temp"]))
-    if now_temp[0] != '-':
+    if now_temp[0] != '-' and now_temp[0] != "0":
         now_temp = '+' + now_temp
     now_status = w.get_detailed_status()
     now_status = now_status[0].upper() + now_status[1:]
