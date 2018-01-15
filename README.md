@@ -7,6 +7,7 @@ This is my first telegram bot written in Python
 ```
 /bug                - Link to create issue on github
 /cat <Number>       - Random cat photo from Tumbler
+/hat                - Sorting hat from Harry Potter
 /db <SQL query>     - Manage your database (Only for admins)
 /dog <Number>       - Random dog photo from dog.ceo
 /ibash <Number>     - Random quote from ibash.org.ru
