@@ -688,7 +688,7 @@ def bug(bot, update):
                      text=bug_text,
                      parse_mode='markdown')
 
-# ==== End of pinger function ================================================
+# ==== End of bug function ================================================
 
 
 def hat(bot, update):
@@ -721,7 +721,7 @@ def hat(bot, update):
                      parse_mode='markdown')
     log_print('Hat answer is {0}'.format(faculty), username)
 
-# ==== End of bug function ===================================================
+# ==== End of hat function ===================================================
 
 
 def cmd(bot, update, args):
