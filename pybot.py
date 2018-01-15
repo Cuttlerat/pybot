@@ -693,7 +693,7 @@ def bug(bot, update):
 
 def hat(bot, update):
     user_id = update.message.from_user.id
-    faculties = ['Slytherin', 'Gryffindor', 'Hufflepuff', 'Ravenclaw']
+    faculties = ['Gryffindor', 'Slytherin', 'Hufflepuff', 'Ravenclaw']
     faculty = faculties[user_id % len(faculties)]
 
     bot.send_message(chat_id=update.message.chat_id,
