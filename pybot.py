@@ -18,6 +18,7 @@ import os
 import sys
 import errno
 import pyowm
+import random
 import subprocess
 
 from bs4 import BeautifulSoup
@@ -687,6 +688,38 @@ def bug(bot, update):
                      text=bug_text,
                      parse_mode='markdown')
 
+# ==== End of pinger function ================================================
+
+
+def hat(bot, update):
+    username = update.message.from_user.username
+    faculties = ['Gryffindor', 'Hufflepuff', 'Ravenclaw', 'Slytherin']
+    faculty = random.choice(faculties)
+
+    engine = create_engine(DATABASE)
+    Base = automap_base()
+    Base.prepare(engine, reflect=True)
+
+    hat = Base.classes.hat
+
+    with connector(engine) as ses:
+        try:
+            home = ses.query(hat.home).filter(
+                hat.username == username).one()
+            faculty = "".join([i for i in home])
+
+        except NoResultFound:
+            new_hat = hat(
+                username=username,
+                home=faculty)
+            ses.add(new_hat)
+            out_text = "Added hat @{0}: {1}".format(username, faculty)
+
+    bot.send_message(chat_id=update.message.chat_id,
+                     text='*{0}*'.format(faculty),
+                     parse_mode='markdown')
+    log_print('Hat answer is {0}'.format(faculty), username)
+
 # ==== End of bug function ===================================================
 
 
@@ -762,6 +795,10 @@ def create_table():
                       Column('username', Unicode(255), primary_key=True),
                       Column('city', Unicode(255)))
 
+    hat = Table('hat', metadata,
+                      Column('username', Unicode(255), primary_key=True),
+                      Column('home', Unicode(255)))
+
     w_phrases = Table('w_phrases', metadata,
                       Column('match', Unicode(255), primary_key=True))
 
@@ -831,6 +868,7 @@ try:
         CommandHandler('bug', bug),
         CommandHandler(['start', 'info'], start),
         CommandHandler(['weather', 'w'], weather, pass_args=True),
+        CommandHandler('hat', hat),
         CommandHandler(
             ['ibash', 'loglist', 'cat', 'dog'],
             random_content, pass_args=True
