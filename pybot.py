@@ -692,16 +692,15 @@ def bug(bot, update):
 
 
 def hat(bot, update):
-    username = update.message.from_user.username
-    faculties = ['Slytherin', 'Ravenclaw', 'Hufflepuff', 'Gryffindor']
-    index = int(hashlib.sha256(username.lower().encode('utf-8')).hexdigest(), 16) % 4
-    faculty = faculties[index]
+    user_id = update.message.from_user.id
+    faculties = ['Slytherin', 'Gryffindor', 'Hufflepuff', 'Ravenclaw']
+    faculty = faculties[user_id % len(faculties)]
 
     bot.send_message(chat_id=update.message.chat_id,
                      text='*{0}*'.format(faculty),
                      reply_to_message_id=update.message.message_id,
                      parse_mode='markdown')
-    log_print('Hat answer is {0}'.format(faculty), username)
+    log_print('Hat answer is {0} for user_id = {1}'.format(faculty, user_id))
 
 # ==== End of hat function ===================================================
 
