@@ -717,6 +717,7 @@ def hat(bot, update):
 
     bot.send_message(chat_id=update.message.chat_id,
                      text='*{0}*'.format(faculty),
+                     reply_to_message_id=update.message.message_id,
                      parse_mode='markdown')
     log_print('Hat answer is {0}'.format(faculty), username)
 
