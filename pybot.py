@@ -18,7 +18,7 @@ import os
 import sys
 import errno
 import pyowm
-import random
+import hashlib
 import subprocess
 
 from bs4 import BeautifulSoup
@@ -693,27 +693,9 @@ def bug(bot, update):
 
 def hat(bot, update):
     username = update.message.from_user.username
-    faculties = ['Gryffindor', 'Hufflepuff', 'Ravenclaw', 'Slytherin']
-    faculty = random.choice(faculties)
-
-    engine = create_engine(DATABASE)
-    Base = automap_base()
-    Base.prepare(engine, reflect=True)
-
-    hat = Base.classes.hat
-
-    with connector(engine) as ses:
-        try:
-            home = ses.query(hat.home).filter(
-                hat.username == username).one()
-            faculty = "".join([i for i in home])
-
-        except NoResultFound:
-            new_hat = hat(
-                username=username,
-                home=faculty)
-            ses.add(new_hat)
-            out_text = "Added hat @{0}: {1}".format(username, faculty)
+    faculties = ['Slytherin', 'Ravenclaw', 'Hufflepuff', 'Gryffindor']
+    index = int(hashlib.sha256(username.lower().encode('utf-8')).hexdigest(), 16) % 4
+    faculty = faculties[index]
 
     bot.send_message(chat_id=update.message.chat_id,
                      text='*{0}*'.format(faculty),
@@ -795,10 +777,6 @@ def create_table():
     locations = Table('locations', metadata,
                       Column('username', Unicode(255), primary_key=True),
                       Column('city', Unicode(255)))
-
-    hat = Table('hat', metadata,
-                      Column('username', Unicode(255), primary_key=True),
-                      Column('home', Unicode(255)))
 
     w_phrases = Table('w_phrases', metadata,
                       Column('match', Unicode(255), primary_key=True))
