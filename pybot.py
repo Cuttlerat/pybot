@@ -552,6 +552,8 @@ def pinger(bot, update, args):
                         out_text = ""
                         for match in user_matches:
                             out_text += "\n{} | {}".format(match.username, match.match)
+                        if out_text == "":
+                            out_text = "No such user"
                         bot.send_message(chat_id=update.message.chat_id,
                                          text=out_text)
                         log_print('Show pings of "{0}", by {1}'.format(username_show, username))
@@ -629,6 +631,8 @@ def pinger(bot, update, args):
                         out_text = ""
                         for match in user_matches:
                             out_text += "\n{} | {}".format(match.username, match.match)
+                        if out_text == "":
+                            out_text = "No such user"
                         bot.send_message(chat_id=update.message.chat_id,
                                          text=out_text)
                         log_print('Show pings of "{0}", by {1}'.format(username_show, username))
