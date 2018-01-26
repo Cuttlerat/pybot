@@ -49,18 +49,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from dateutil.tz import tzlocal
 from datetime import datetime
 from tokens.tokens import *
-'''
-# Fuck off kosc with your clean code. I wanna be a codemonkey!
-from tokens.tokens import (
-    BOT_TOKEN,
-    WEATHER_TOKEN,
-    DATABASE_HOST,
-    ADMINS,
-    MODE,
-    WEBHOOK_PORT,
-    WEBHOOK_URL
-)
-'''
+
 try:
     from tokens.tokens import LISTEN_IP
 except ImportError:
@@ -162,6 +151,7 @@ def weather(bot, update, args):
         log_print('"{0}"'.format(error_message), username)
         return
 
+    # TODO: Rename this vars
     fc = owm.three_hours_forecast(city)
     w = observation.get_weather()
     city = observation.get_location().get_name()
@@ -287,13 +277,20 @@ def random_content(bot, update, args):
 
     def keyboard_markup(i, count, arg):
         if i == count-1:
-            keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Another one!", callback_data='{}_1'.format(arg)),
-                                              InlineKeyboardButton("I NEED MORE!", callback_data='{}_5'.format(arg))],
-                                             [InlineKeyboardButton("No, thank you", callback_data='none')]])
+            keyboard = InlineKeyboardMarkup(
+                [[InlineKeyboardButton("Another one!", callback_data='{}_1'.format(arg)),
+                  InlineKeyboardButton("I NEED MORE!", callback_data='{}_5'.format(arg))],
+                 [InlineKeyboardButton("No, thank you", callback_data='none')]])
+
+            # Markup: 
+            # [Another one!][I NEED MORE!]
+            # [      No, thank you       ]
+
         else:
             keyboard = InlineKeyboardMarkup([[]])
         return(keyboard)
 
+    # TODO: Render in function
     if '@' in command:
         command = command.split('@')[0]
     count = int(''.join(args)) if ''.join(args).isdigit() else 1
@@ -352,6 +349,7 @@ def random_content(bot, update, args):
 # ==== End of random_content function ===============================================
 
 
+# TODO: Decompose into small functions
 def parser(bot, update):
 
     in_text = update.message.text.lower().replace('ё', 'е').replace(',', '').replace('.', '')
@@ -709,42 +707,6 @@ def hat(bot, update):
 # ==== End of hat function ===================================================
 
 
-def cmd(bot, update, args):
-
-    username = update.message.from_user.username
-    if username not in ADMINS:
-        bot.send_message(chat_id=update.message.chat_id,
-                         text="You are not allowed to use this command")
-        log_print('Try of command', username)
-        return
-    else:
-        if not args:
-            bot.send_message(chat_id=update.message.chat_id,
-                             text="Usage `/cmd command`",
-                             parse_mode='markdown')
-            log_print('Usage of command', username)
-            return
-        else:
-            output = ['', '']
-            try:
-                command = subprocess.Popen(args, stdout=subprocess.PIPE)
-                output = list(command.communicate())
-            except FileNotFoundError:
-                output[0] = b'\n'
-                output[1] = b'No such command\n'
-            for i in range(len(output)):
-                try:
-                    output[i] = output[i].decode("utf-8")
-                except AttributeError:
-                    output[i] = ""
-            bot.send_message(chat_id=update.message.chat_id,
-                             text="*Output:*\n```\n{0}```*Errors:*\n```\n{1}```".format(*output),
-                             parse_mode='markdown')
-            log_print('Command "{0}"'.format(" ".join(args)), username)
-
-# ==== End of cmd function ===================================================
-
-
 def create_table():
 
     flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY
@@ -855,7 +817,6 @@ try:
             ['ibash', 'loglist', 'cat', 'dog'],
             random_content, pass_args=True
         ),
-        CommandHandler('cmd', cmd, pass_args=True),
         CommandHandler('wset', wset, pass_args=True),
         CommandHandler('db', db, pass_args=True),
         CommandHandler('ping', pinger, pass_args=True),
