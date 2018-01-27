@@ -290,7 +290,7 @@ def random_content(bot, update, args):
             keyboard = InlineKeyboardMarkup([[]])
         return(keyboard)
 
-    # TODO: Render in function
+    # TODO: Move in function
     if '@' in command:
         command = command.split('@')[0]
     count = int(''.join(args)) if ''.join(args).isdigit() else 1
