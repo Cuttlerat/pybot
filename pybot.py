@@ -151,16 +151,15 @@ def weather(bot, update, args):
         log_print('"{0}"'.format(error_message), username)
         return
 
-    # TODO: Rename this vars
-    fc = owm.three_hours_forecast(city)
-    w = observation.get_weather()
+    forecast = owm.three_hours_forecast(city)
+    now_weather = observation.get_weather()
     city = observation.get_location().get_name()
 
     weathers = {}
 
     # Today
     today = pyowm.timeutils.next_three_hours()
-    weather = fc.get_weather_at(today)
+    weather = forecast.get_weather_at(today)
     temp = str(round(weather.get_temperature(unit='celsius')["temp"]))
     if temp[0] != '-' and temp != "0":
         weathers["today", "temp", 0] = '+' + temp
@@ -172,7 +171,7 @@ def weather(bot, update, args):
 
     # Tomorrow
     for i in [6, 12, 18]:
-        weather = fc.get_weather_at(pyowm.timeutils.tomorrow(i, 0))
+        weather = forecast.get_weather_at(pyowm.timeutils.tomorrow(i, 0))
         temp = str(round(weather.get_temperature('celsius')["temp"]))
         if temp[0] != '-' and temp != "0":
             weathers["tomorrow", "temp", i] = '+' + temp
@@ -182,12 +181,12 @@ def weather(bot, update, args):
         status = weather.get_detailed_status()
         weathers["tomorrow", "status", i] = status[0].upper() + status[1:]
 
-    now_temp = str(round(w.get_temperature(unit='celsius')["temp"]))
+    now_temp = str(round(now_weather.get_temperature(unit='celsius')["temp"]))
     if now_temp[0] != '-' and now_temp[0] != "0":
         now_temp = '+' + now_temp
-    now_status = w.get_detailed_status()
+    now_status = now_weather.get_detailed_status()
     now_status = now_status[0].upper() + now_status[1:]
-    now_emoji = get_emoji(w.get_status())
+    now_emoji = get_emoji(now_weather.get_status())
 
     try:
         message = ''.join("""
