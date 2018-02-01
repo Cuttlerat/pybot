@@ -407,7 +407,7 @@ def parser(bot, update):
 
         try:
             ses.query(ping_phrases.phrase).filter(
-                ping_phrases.phrase.in_(in_text_list)).limit(1)
+                ping_phrases.phrase.in_(in_text_list)).limit(1).one()
             usernames = ses.query(pingers.username).filter(
                 and_(
                     pingers.match.in_(in_text_list),
