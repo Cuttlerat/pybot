@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 #===============================================================================
 #
 #    DESCRIPTION: Telegram bot in python
@@ -9,7 +10,6 @@
 #
 #===============================================================================
 
-# Import {{{
 import json
 import requests
 import sqlite3
@@ -54,7 +54,6 @@ try:
     from tokens.tokens import LISTEN_IP
 except ImportError:
     pass
-# }}}
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -838,4 +837,3 @@ try:
 except sqlite3.ProgrammingError:
     pass
 
-# vim: set fdm=marker:
