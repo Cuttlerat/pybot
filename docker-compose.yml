@@ -1,12 +1,6 @@
 version: "3"
 services:
 
-    pybot_prebuild:
-        image: pybot_prebuild
-        build:
-            context: .
-            dockerfile: dockerfiles/pybot_prebuild.Dockerfile
-
     pybot:
         image: pybot
         build:
@@ -16,8 +10,6 @@ services:
           - ./data:/pybot/data
           - ./tokens:/pybot/tokens:ro
         restart: always
-        depends_on:
-          - pybot_prebuild
 
     builder:
         image: builder
@@ -28,3 +20,5 @@ services:
           - .:/pybot
           - /var/run/docker.sock:/var/run/docker.sock
         restart: always
+        depends_on:
+          - pybot
