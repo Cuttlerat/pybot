@@ -716,9 +716,7 @@ def create_table():
     try:
         db_check_file = os.open(DATABASE_HOST, flags)
     except OSError as e:
-        if e.errno == errno.EEXIST:
-            pass
-        else:
+        if e.errno != errno.EEXIST:
             raise
     else:
         os.fdopen(db_check_file, 'w')
