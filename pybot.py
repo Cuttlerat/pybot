@@ -7,6 +7,7 @@
 #         E-MAIL: avkioller@gmail.com
 #         GITHUB: https://github.com/Cuttlerat/pybot
 #        CREATED: 02.08.2017
+#        VERSION: 1.0
 #
 #===============================================================================
 
@@ -789,7 +790,7 @@ def connector(engine):
         session.commit()
     except:
         error = str(sys.exc_info())
-        print("Error is: ", error)
+        log_print("Error is: ", error)
         session.rollback()
         raise
     finally:
