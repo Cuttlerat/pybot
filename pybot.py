@@ -17,6 +17,7 @@ import sqlite3
 import logging
 import os
 import sys
+import re
 import errno
 import pyowm
 import hashlib
@@ -512,7 +513,8 @@ def pinger(bot, update, args):
 
     if username in ADMINS:
         try:
-            p_username = args[0]
+            p_username = re.sub('[@]', '', args[0])
+            #p_username = args[0]
             try:
                 match = args[1].lower()
             except:
@@ -560,7 +562,8 @@ def pinger(bot, update, args):
                         log_print('There was some trouble in pinger function by "{0}"'.format(args_line), username)
                 elif p_username == "delete":
                     try:
-                        p_username = args[1]
+                        #p_username = args[1]
+                        p_username = re.sub('[@]', '', args[1])
                         try:
                             delete_match = args[2].lower()
                         except:
@@ -616,7 +619,8 @@ def pinger(bot, update, args):
                                      text=out_text)
                 elif user_match == "show":
                     try:
-                        username_show = args[1]
+                        #username_show = args[1]
+                        username_show = re.sub('[@]', '', args[1])
                     except:
                         out_text = "Usage `/ping show <username>`"
                         bot.send_message(chat_id=update.message.chat_id,
