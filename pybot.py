@@ -710,6 +710,18 @@ def hat(bot, update):
 # ==== End of hat function ===================================================
 
 
+def chat_id(bot, update):
+    chat_id = update.message.chat_id
+    username = update.message.from_user.username
+    bot.send_message(chat_id=chat_id,
+                     text="`{0}`".format(chat_id),
+                     reply_to_message_id=update.message.message_id,
+                     parse_mode='markdown')
+    log_print('Chat id {0}'.format(chat_id), username)
+
+# ==== End of chat_id function ===============================================
+
+
 def create_table():
 
     flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY
@@ -813,6 +825,7 @@ try:
 
     [dispatcher.add_handler(i) for i in [
         CommandHandler('bug', bug),
+        CommandHandler('chatid', chat_id),
         CommandHandler(['start', 'info'], start),
         CommandHandler(['weather', 'w'], weather, pass_args=True),
         CommandHandler('hat', hat),
