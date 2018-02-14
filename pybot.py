@@ -277,7 +277,7 @@ def random_content(bot, update, args):
 
     def keyboard_markup(i, count, arg):
         if i == count-1:
-            keyboard = InlineKeyboardMarkup(
+            return InlineKeyboardMarkup(
                 [[InlineKeyboardButton("Another one!", callback_data='{}_1'.format(arg)),
                   InlineKeyboardButton("I NEED MORE!", callback_data='{}_5'.format(arg))],
                  [InlineKeyboardButton("No, thank you", callback_data='none')]])
@@ -287,8 +287,7 @@ def random_content(bot, update, args):
             # [      No, thank you       ]
 
         else:
-            keyboard = InlineKeyboardMarkup([[]])
-        return(keyboard)
+            return InlineKeyboardMarkup([[]])
 
     # TODO: Move in function
     if '@' in command:
