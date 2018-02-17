@@ -513,7 +513,6 @@ def pinger(bot, update, args):
     if username in ADMINS:
         try:
             p_username = re.sub('[@]', '', args[0])
-            #p_username = args[0]
             try:
                 match = args[1].lower()
             except:
@@ -561,7 +560,6 @@ def pinger(bot, update, args):
                         log_print('There was some trouble in pinger function by "{0}"'.format(args_line), username)
                 elif p_username == "delete":
                     try:
-                        #p_username = args[1]
                         p_username = re.sub('[@]', '', args[1])
                         try:
                             delete_match = args[2].lower()
@@ -589,7 +587,7 @@ def pinger(bot, update, args):
                             chat_id=chat_id)
                         ses.add(new_pinger)
                     bot.send_message(chat_id=update.message.chat_id,
-                                     text="Successfuly added")
+                                     text="Successfuly added ping for {0} with match {1}".format(p_username,match))
                     log_print('Added pinger "{0}"'.format(args_line), username)
             except:
                 bot.send_message(chat_id=update.message.chat_id,
@@ -618,7 +616,6 @@ def pinger(bot, update, args):
                                      text=out_text)
                 elif user_match == "show":
                     try:
-                        #username_show = args[1]
                         username_show = re.sub('[@]', '', args[1])
                     except:
                         out_text = "Usage `/ping show <username>`"
@@ -668,7 +665,7 @@ def pinger(bot, update, args):
                             chat_id=chat_id)
                         ses.add(new_pinger)
                         bot.send_message(chat_id=update.message.chat_id,
-                                         text="Successfuly added")
+                                         text="Successfuly added ping for {0} with match {1}".format(username,match))
                         log_print('Added pinger "{0}"'.format(args_line), username)
                     else:
                         bot.send_message(chat_id=update.message.chat_id,
@@ -789,10 +786,10 @@ def buttons(bot, update):
 
 def log_print(message, *username):
     timestamp = datetime.now(tzlocal()).strftime("[%d/%b/%Y:%H:%M:%S %z]")
-    if not username:
-        print("{0}: {1}".format(timestamp, message))
-    else:
+    if username:
         print("{0}: {1} by @{2}".format(timestamp, message, "".join(username)))
+    else:
+        print("{0}: {1}".format(timestamp, message))
 
 
 @contextmanager
