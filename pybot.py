@@ -358,8 +358,6 @@ def parser(bot, update):
 
     answers = Base.classes.answers
     w_phrases = Base.classes.w_phrases
-    google_ignore = Base.classes.google_ignore
-    google = Base.classes.google
     ping_phrases = Base.classes.ping_phrases
     ping_exclude = Base.classes.ping_exclude
     pingers = Base.classes.pingers
@@ -373,31 +371,6 @@ def parser(bot, update):
             return
         except NoResultFound:
             pass
-
-    # ------------ Google -----------------
-    with connector(engine) as ses:
-        try:
-            ses.query(google_ignore.ignore).filter(
-                literal(in_text).like('%' + google_ignore.ignore + '%')).one()
-        except NoResultFound:
-            matches = ses.query(google.match).filter(
-                literal(in_text).like(google.match + '%')).all()
-            matches = [i for i in matches for i in i]
-            if matches:
-                g_in_text = in_text.replace("?", "")
-                g_in_text = g_in_text.replace(
-                    sorted(matches, key=len)[-1], "").strip()
-
-                if g_in_text:
-                    out_text = 'https://www.google.ru/search?q={0}'.format(
-                        g_in_text.replace(" ", "+"))
-                    bot.send_message(chat_id=update.message.chat_id,
-                                     disable_web_page_preview=1, text=out_text)
-                    log_print(
-                        'Google "{0}"'.format(g_in_text.strip()),
-                        update.message.from_user.username
-                    )
-                return
 
     # ------------ Ping -----------------
     with connector(engine) as ses:
@@ -741,12 +714,6 @@ def create_table():
 
     ping_phrases = Table('ping_phrases', metadata,
                          Column('phrase', Unicode(255), primary_key=True))
-
-    google_ignore = Table('google_ignore', metadata,
-                          Column('ignore', Unicode(255), primary_key=True))
-
-    google = Table('google', metadata,
-                   Column('match', Unicode(255), primary_key=True))
 
     locations = Table('locations', metadata,
                       Column('username', Unicode(255), primary_key=True),
