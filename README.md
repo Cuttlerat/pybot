@@ -61,30 +61,6 @@ Register your bot here: https://t.me/BotFather
 
 If you want that your bot triggers on a some type of messages, there some options here.
 
-### Google
-
-If you want that your bot triggers on a messages like this
-```
-Cuttlerat: What is Jenkins?
-Cuttlebot: https://www.google.ru/search?q=Jenkins
-```
-
-You will need to add a note in your database like this:
-
-```sql
-/db INSERT INTO google(match) VALUES("what is")
-```
-
-All matches must be in a low case! It's important (I will do something with it later)
-
-If you don't want any word to trigger this function
-
-```sql
-/db INSERT INTO google_ignore(ignore) VALUES("Jenkins")
-Cuttlerat: What is Jenkins?
-*no answer*
-```
-
 ### Simple trigger
 
 If you want a simple trigger on a message responding with your specified string
