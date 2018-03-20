@@ -510,7 +510,7 @@ def pinger(bot, update, args):
                                      text=out_text)
                 elif p_username == "show":
                     try:
-                        username_show = args[1]
+                        username_show = re.sub('[@]', '', args[1])
                     except:
                         out_text = "Usage `/ping show <username>`"
                         bot.send_message(chat_id=update.message.chat_id,
@@ -521,7 +521,7 @@ def pinger(bot, update, args):
                         user_matches = ses.query(pingers).filter(pingers.chat_id == chat_id, pingers.username == username_show).all()
                         out_text = ""
                         for match in user_matches:
-                            out_text += "\n{} | {}".format(match.username, match.match)
+                            out_text += "\n{}".format(match.match)
                         if out_text == "":
                             out_text = "No such user"
                         bot.send_message(chat_id=update.message.chat_id,
