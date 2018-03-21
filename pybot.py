@@ -536,6 +536,7 @@ def pinger(bot, update, args):
                         p_username = re.sub('[@]', '', args[1])
                         try:
                             delete_match = args[2].lower()
+                                    
                         except:
                             p_username = username
                             delete_match = args[1].lower()
@@ -545,12 +546,19 @@ def pinger(bot, update, args):
                                          parse_mode='markdown',
                                          text=out_text)
                         return
-                    ses.query(pingers).filter(and_(
-                           pingers.chat_id == chat_id,
-                           pingers.username == p_username,
-                           pingers.match == delete_match)).delete()
-                    bot.send_message(chat_id=update.message.chat_id,
-                                     text="Deleted")
+                    if delete_match == "all":
+                        ses.query(pingers).filter(and_(
+                               pingers.chat_id == chat_id,
+                               pingers.username == p_username)).delete()
+                        bot.send_message(chat_id=update.message.chat_id,
+                                         text="Deleted all matches for user @{}".format(p_username))
+                    else:
+                        ses.query(pingers).filter(and_(
+                               pingers.chat_id == chat_id,
+                               pingers.username == p_username,
+                               pingers.match == delete_match)).delete()
+                        bot.send_message(chat_id=update.message.chat_id,
+                                         text="Deleted")
                     log_print('Delete pinger "{0}" by @{1}'.format(args_line, username))
                 else:
                     with connector(engine) as ses:
