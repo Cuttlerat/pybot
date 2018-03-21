@@ -505,7 +505,7 @@ def pinger(bot, update, args):
                     all_matches = ses.query(pingers).filter(pingers.chat_id == chat_id).all()
                     out_text = ""
                     for match in all_matches:
-                        out_text += "\n{} | {}".format(match.username, match.match)
+                        out_text += "\n{}".format(match.match)
                     bot.send_message(chat_id=update.message.chat_id,
                                      text=out_text)
                 elif p_username == "show":
