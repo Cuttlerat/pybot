@@ -646,7 +646,7 @@ def pinger(bot, update, args):
                             chat_id=chat_id)
                         ses.add(new_pinger)
                         bot.send_message(chat_id=update.message.chat_id,
-                                         text="Successfuly added ping for {0} with match {1}".format(username,match))
+                                         text="Successfuly added ping for {0} with match {1}".format(username,user_match))
                         log_print('Added pinger "{0}"'.format(args_line), username)
                     else:
                         bot.send_message(chat_id=update.message.chat_id,
