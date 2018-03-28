@@ -3,73 +3,76 @@ from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm.exc import NoResultFound
 
 from bot.logger import log_print
-from bot.models import DATABASE, connector
+from bot.models import DATABASE, connector, ENGINE, WeatherPhrases, Answers, PingPhrases, Pingers, PingExcludes
 from bot.weather import weather
 
 
-# TODO: Decompose into small functions
-def parser(bot, update):
+def weather_parser(bot, update):
     in_text = update.message.text.lower().replace('ё', 'е').replace(',', '').replace('.', '')
-    engine = create_engine(DATABASE)
-    Base = automap_base()
-    Base.prepare(engine, reflect=True)
-
-    answers = Base.classes.answers
-    w_phrases = Base.classes.w_phrases
-    ping_phrases = Base.classes.ping_phrases
-    ping_exclude = Base.classes.ping_exclude
-    pingers = Base.classes.pingers
-
     # ------------ Weather ----------------
-    with connector(engine) as ses:
+    with connector(ENGINE) as ses:
         try:
-            phrase = "".join(ses.query(w_phrases.match).filter(
-                literal(in_text.lower()).contains(w_phrases.match)).one())
+            phrase = "".join(ses.query(WeatherPhrases.match).filter(
+                literal(in_text.lower()).contains(WeatherPhrases.match)).one())
             weather(bot, update, in_text.lower()[in_text.lower().find(phrase) + len(phrase):].split())
             return
         except NoResultFound:
             pass
 
+
+def answer_parser(bot, update):
+    in_text = update.message.text.lower().replace('ё', 'е').replace(',', '').replace('.', '')
+    # ------------ Answer -----------------
+    with connector(ENGINE) as ses:
+        out_text = ses.query(Answers.answer).filter(
+            literal(in_text).contains(Answers.match))
+    for message in ["".join(i) for i in out_text]:
+        bot.send_message(chat_id=update.message.chat_id, text=message)
+        log_print("Answer", update.message.from_user.username)
+
+
+def ping_parser(bot, update):
+    in_text = update.message.text.lower().replace('ё', 'е').replace(',', '').replace('.', '')
     # ------------ Ping -----------------
-    with connector(engine) as ses:
+    with connector(ENGINE) as ses:
         in_text_list = in_text.split()
         username = update.message.from_user.username
         chat_id = update.message.chat_id
 
         try:
-            ses.query(ping_phrases.phrase).filter(
-                ping_phrases.phrase.in_(in_text_list)).limit(1).one()
-            usernames = ses.query(pingers.username).filter(
+            ses.query(PingPhrases.phrase).filter(
+                PingPhrases.phrase.in_(in_text_list)).limit(1).one()
+            usernames = ses.query(Pingers.username).filter(
                 and_(
-                    pingers.match.in_(in_text_list),
+                    Pingers.match.in_(in_text_list),
                     or_(
-                        pingers.chat_id == chat_id,
-                        pingers.chat_id == "all")
+                        Pingers.chat_id == chat_id,
+                        Pingers.chat_id == "all")
                 )).distinct().all()
             usernames = [i for i in usernames for i in i]
             if 'EVERYONE GET IN HERE' in usernames:
                 try:
-                    ses.query(ping_exclude.match).filter(
-                        ping_exclude.match.in_(in_text_list)).one()
-                    usernames = ses.query(pingers.username).filter(
+                    ses.query(PingExcludes.match).filter(
+                        PingExcludes.match.in_(in_text_list)).one()
+                    usernames = ses.query(Pingers.username).filter(
                         and_(
-                            pingers.username.notin_(usernames),
-                            pingers.username != username,
+                            Pingers.username.notin_(usernames),
+                            Pingers.username != username,
                             or_(
-                                pingers.chat_id == chat_id,
-                                pingers.chat_id == "all")
+                                Pingers.chat_id == chat_id,
+                                Pingers.chat_id == "all")
                         )).distinct().all()
                     usernames = [i for i in usernames for i in i]
 
                 except NoResultFound:
                     if ['EVERYONE GET IN HERE'] == usernames:
-                        usernames = ses.query(pingers.username).filter(
+                        usernames = ses.query(Pingers.username).filter(
                             and_(
-                                pingers.username != 'EVERYONE GET IN HERE',
-                                pingers.username != username,
+                                Pingers.username != 'EVERYONE GET IN HERE',
+                                Pingers.username != username,
                                 or_(
-                                    pingers.chat_id == chat_id,
-                                    pingers.chat_id == "all")
+                                    Pingers.chat_id == chat_id,
+                                    Pingers.chat_id == "all")
                             )).distinct().all()
                         usernames = [i for i in usernames for i in i]
 
@@ -83,10 +86,12 @@ def parser(bot, update):
         except NoResultFound:
             pass
 
-    # ------------ Answer -----------------
-    with connector(engine) as ses:
-        out_text = ses.query(answers.string).filter(
-            literal(in_text).contains(answers.match))
-    for message in ["".join(i) for i in out_text]:
-        bot.send_message(chat_id=update.message.chat_id, text=message)
-        log_print("Answer", update.message.from_user.username)
+
+# TODO: Decompose into small functions
+def parser(bot, update):
+    weather_parser(bot, update)
+    ping_parser(bot, update)
+    answer_parser(bot, update)
+
+
+

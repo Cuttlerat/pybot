@@ -26,7 +26,7 @@ from bot.db import db
 from bot.helpers import start, bug, hat, chat_id, buttons
 from bot.logger import log_print
 from bot.models import create_table
-from bot.parser import parser
+from bot.parser import parser, weather_parser, answer_parser, ping_parser
 from bot.pinger import pinger_handler
 from bot.random_content import random_content
 from bot.tokens.tokens import *

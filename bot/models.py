@@ -48,6 +48,28 @@ class Pingers(Base):
     match = Column('match', Unicode(255))
 
 
+class WeatherPhrases(Base):
+    __tablename__ = 'w_phrases'
+
+    match = Column('match', Unicode(255), primary_key=True)
+
+
+class Answers(Base):
+    __tablename__ = 'answers'
+    match = Column('match', Unicode(255), primary_key=True)
+    answer = Column('string', Unicode(255))
+
+
+class PingPhrases(Base):
+    __tablename__ = 'ping_phrases'
+    phrase = Column('phrase', Unicode(255), primary_key=True)
+
+
+class PingExcludes(Base):
+    __tablename__ = 'ping_exclude'
+    match = Column('match', Unicode(255), primary_key=True)
+
+
 def create_table():
     flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY
 
@@ -62,18 +84,18 @@ def create_table():
     engine = create_engine(DATABASE)
     metadata = MetaData(engine)
 
-    ping_phrases = Table('ping_phrases', metadata,
-                         Column('phrase', Unicode(255), primary_key=True))
+    # ping_phrases = Table('ping_phrases', metadata,
+    #                     Column('phrase', Unicode(255), primary_key=True))
 
-    w_phrases = Table('w_phrases', metadata,
-                      Column('match', Unicode(255), primary_key=True))
+    # w_phrases = Table('w_phrases', metadata,
+    #                  Column('match', Unicode(255), primary_key=True))
 
-    answers = Table('answers', metadata,
-                    Column('match', Unicode(255), primary_key=True),
-                    Column('string', Unicode(255)))
+    # answers = Table('answers', metadata,
+    #                Column('match', Unicode(255), primary_key=True),
+    #                Column('string', Unicode(255)))
 
-    ping_exclude = Table('ping_exclude', metadata,
-                         Column('match', Unicode(255), primary_key=True))
+    #ping_exclude = Table('ping_exclude', metadata,
+    #                     Column('match', Unicode(255), primary_key=True))
 
     metadata.create_all()
     meta.create_all(ENGINE)

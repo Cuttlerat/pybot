@@ -28,14 +28,14 @@ class PingerCommand:
 
     def ping_from_admin(self):
         try:
-            p_username = re.sub('[@]', '', self.args[0])
+            ping_username = re.sub('[@]', '', self.args[0])
             try:
                 match = self.args[1].lower()
             except:
                 if self.args[0] not in ["show", "all", "delete"]:
-                    p_username = self.username
+                    ping_username = self.username
                     match = self.args[0]
-            if not p_username:
+            if not ping_username:
                 raise Exception
         except:
             usage_text = "Usage: \n`/ping username <word>`\n`/ping show <username>`\n`/ping all`\n`/ping delete " \
@@ -47,22 +47,22 @@ class PingerCommand:
 
         with connector(ENGINE) as ses:
             try:
-                if p_username == "all":
+                if ping_username == "all":
                     self.__answer_for_all(ses)
-                elif p_username == "show":
+                elif ping_username == "show":
                     self.__answer_for_show(ses)
-                elif p_username == "delete":
+                elif ping_username == "delete":
                     self.__answer_for_delete_from_admin(ses)
                 else:
                     with connector(ENGINE) as inner_ses:
                         new_pinger = Pingers(
-                            username=p_username,
+                            username=ping_username,
                             match=match,
                             chat_id=self.chat_id)
                         inner_ses.add(new_pinger)
                     self.bot.send_message(chat_id=self.update.message.chat_id,
-                                          text="Successfuly added ping for {0} with match {1}".format(p_username,
-                                                                                                      match))
+                                          text="Successfully added ping for '{0}' with match '{1}'".format(ping_username,
+                                                                                                          match))
                     log_print('Added pinger "{0}"'.format(self.args_line), self.username)
             except:
                 self.bot.send_message(chat_id=self.update.message.chat_id,
