@@ -7,184 +7,205 @@ from bot.models import connector, ENGINE, Pingers
 from bot.tokens.tokens import ADMINS
 
 
-def pinger(bot, update, args):
-    chat_id = update.message.chat_id
+def pinger_handler(bot, update, args):
     username = update.message.from_user.username
-    args_line = " ".join(args)
-
+    pinger = Pinger(bot, update, args)
     if username in ADMINS:
+        pinger.ping_from_admin()
+    else:
+        pinger.ping_from_user()
+
+
+class Pinger:
+    def __init__(self, bot, update, args):
+        self.args = args
+        self.update = update
+        self.bot = bot
+
+        self.args_line = " ".join(args)
+        self.chat_id = update.message.chat_id
+        self.username = update.message.from_user.username
+
+    def ping_from_admin(self):
         try:
-            p_username = re.sub('[@]', '', args[0])
+            p_username = re.sub('[@]', '', self.args[0])
             try:
-                match = args[1].lower()
+                match = self.args[1].lower()
             except:
-                if args[0] not in ["show", "all", "delete"]:
-                    p_username = username
-                    match = args[0]
-            if not p_username: raise Exception
+                if self.args[0] not in ["show", "all", "delete"]:
+                    p_username = self.username
+                    match = self.args[0]
+            if not p_username:
+                raise Exception
         except:
-            usage_text = "Usage: \n`/ping username <word>`\n`/ping show <username>`\n`/ping all`\n`/ping delete username <word>`"
-            bot.send_message(chat_id=update.message.chat_id,
-                             parse_mode='markdown',
-                             text=usage_text)
+            usage_text = "Usage: \n`/ping username <word>`\n`/ping show <username>`\n`/ping all`\n`/ping delete " \
+                         "username <word>` "
+            self.bot.send_message(chat_id=self.update.message.chat_id,
+                                  parse_mode='markdown',
+                                  text=usage_text)
             return
         with connector(ENGINE) as ses:
             try:
                 if p_username == "all":
-                    all_matches = ses.query(Pingers).filter(Pingers.chat_id == chat_id).all()
+                    all_matches = ses.query(Pingers).filter(Pingers.chat_id == self.chat_id).all()
                     out_text = ""
                     for match in all_matches:
                         out_text += "\n{}".format(match.match)
-                    bot.send_message(chat_id=update.message.chat_id,
-                                     text=out_text)
+                    self.bot.send_message(chat_id=self.update.message.chat_id,
+                                          text=out_text)
                 elif p_username == "show":
                     try:
-                        username_show = re.sub('[@]', '', args[1])
+                        username_show = re.sub('[@]', '', self.args[1])
                     except:
                         out_text = "Usage `/ping show <username>`"
-                        bot.send_message(chat_id=update.message.chat_id,
-                                         parse_mode='markdown',
-                                         text=out_text)
+                        self.bot.send_message(chat_id=self.update.message.chat_id,
+                                              parse_mode='markdown',
+                                              text=out_text)
                         return
                     try:
-                        user_matches = ses.query(Pingers).filter(Pingers.chat_id == chat_id,
+                        user_matches = ses.query(Pingers).filter(Pingers.chat_id == self.chat_id,
                                                                  Pingers.username == username_show).all()
                         out_text = ""
                         for match in user_matches:
                             out_text += "\n{}".format(match.match)
                         if out_text == "":
                             out_text = "No such user"
-                        bot.send_message(chat_id=update.message.chat_id,
-                                         text=out_text)
-                        log_print('Show pings of "{0}", by {1}'.format(username_show, username))
+                        self.bot.send_message(chat_id=self.update.message.chat_id,
+                                              text=out_text)
+                        log_print('Show pings of "{0}", by {1}'.format(username_show, self.username))
                     except:
-                        bot.send_message(chat_id=update.message.chat_id,
-                                         text="There was some trouble")
-                        log_print('There was some trouble in pinger function by "{0}"'.format(args_line), username)
+                        self.bot.send_message(chat_id=self.update.message.chat_id,
+                                              text="There was some trouble")
+                        log_print('There was some trouble in pinger function by "{0}"'.format(self.args_line),
+                                  self.username)
                 elif p_username == "delete":
                     try:
-                        p_username = re.sub('[@]', '', args[1])
+                        p_username = re.sub('[@]', '', self.args[1])
                         try:
-                            delete_match = args[2].lower()
+                            delete_match = self.args[2].lower()
 
                         except:
-                            p_username = username
-                            delete_match = args[1].lower()
+                            p_username = self.username
+                            delete_match = self.args[1].lower()
                     except:
                         out_text = "Usage `/ping delete username <word>`"
-                        bot.send_message(chat_id=update.message.chat_id,
-                                         parse_mode='markdown',
-                                         text=out_text)
+                        self.bot.send_message(chat_id=self.update.message.chat_id,
+                                              parse_mode='markdown',
+                                              text=out_text)
                         return
                     if delete_match == "all":
                         ses.query(Pingers).filter(and_(
-                            Pingers.chat_id == chat_id,
+                            Pingers.chat_id == self.chat_id,
                             Pingers.username == p_username)).delete()
-                        bot.send_message(chat_id=update.message.chat_id,
-                                         text="Deleted all matches for user @{}".format(p_username))
+                        self.bot.send_message(chat_id=self.update.message.chat_id,
+                                              text="Deleted all matches for user @{}".format(p_username))
                     else:
                         ses.query(Pingers).filter(and_(
-                            Pingers.chat_id == chat_id,
+                            Pingers.chat_id == self.chat_id,
                             Pingers.username == p_username,
                             Pingers.match == delete_match)).delete()
-                        bot.send_message(chat_id=update.message.chat_id,
-                                         text="Deleted")
-                    log_print('Delete pinger "{0}" by @{1}'.format(args_line, username))
+                        self.bot.send_message(chat_id=self.update.message.chat_id,
+                                              text="Deleted")
+                    log_print('Delete pinger "{0}" by @{1}'.format(self.args_line, self.username))
                 else:
-                    with connector(ENGINE) as ses:
+                    with connector(ENGINE) as inner_ses:
                         new_pinger = Pingers(
                             username=p_username,
                             match=match,
-                            chat_id=chat_id)
-                        ses.add(new_pinger)
-                    bot.send_message(chat_id=update.message.chat_id,
-                                     text="Successfuly added ping for {0} with match {1}".format(p_username, match))
-                    log_print('Added pinger "{0}"'.format(args_line), username)
+                            chat_id=self.chat_id)
+                        inner_ses.add(new_pinger)
+                    self.bot.send_message(chat_id=self.update.message.chat_id,
+                                          text="Successfuly added ping for {0} with match {1}".format(p_username,
+                                                                                                      match))
+                    log_print('Added pinger "{0}"'.format(self.args_line), self.username)
             except:
-                bot.send_message(chat_id=update.message.chat_id,
-                                 text="There was some trouble")
-                log_print('There was some trouble in pinger function by "{0}"'.format(args_line), username)
-    else:
+                self.bot.send_message(chat_id=self.update.message.chat_id,
+                                      text="There was some trouble")
+                log_print('There was some trouble in pinger function by "{0}"'.format(self.args_line), self.username)
+
+    def ping_from_user(self):
         try:
             try:
-                user_match = args[0].lower()
-                if not user_match: raise Exception
+                user_match = self.args[0].lower()
+                if not user_match:
+                    raise Exception
             except:
                 out_text = "Usage: \n`/ping <word>`\n`/ping show <username>`\n`/ping me`\n`/ping delete <word>`"
-                bot.send_message(chat_id=update.message.chat_id,
-                                 parse_mode='markdown',
-                                 text=out_text)
+                self.bot.send_message(chat_id=self.update.message.chat_id,
+                                      parse_mode='markdown',
+                                      text=out_text)
                 return
             with connector(ENGINE) as ses:
                 if user_match == "me":
                     all_matches = ses.query(Pingers).filter(and_(
-                        Pingers.chat_id == chat_id,
-                        Pingers.username == username)).all()
+                        Pingers.chat_id == self.chat_id,
+                        Pingers.username == self.username)).all()
                     out_text = ""
                     for match in all_matches:
                         out_text += "\n{}".format(match.match)
-                    bot.send_message(chat_id=update.message.chat_id,
-                                     text=out_text)
+                    self.bot.send_message(chat_id=self.update.message.chat_id,
+                                          text=out_text)
                 elif user_match == "show":
                     try:
-                        username_show = re.sub('[@]', '', args[1])
+                        username_show = re.sub('[@]', '', self.args[1])
                     except:
                         out_text = "Usage `/ping show <username>`"
-                        bot.send_message(chat_id=update.message.chat_id,
-                                         parse_mode='markdown',
-                                         text=out_text)
+                        self.bot.send_message(chat_id=self.update.message.chat_id,
+                                              parse_mode='markdown',
+                                              text=out_text)
                         return
                     try:
-                        user_matches = ses.query(Pingers).filter(Pingers.chat_id == chat_id,
+                        user_matches = ses.query(Pingers).filter(Pingers.chat_id == self.chat_id,
                                                                  Pingers.username == username_show).all()
                         out_text = ""
                         for match in user_matches:
                             out_text += "\n{}".format(match.match)
                         if out_text == "":
                             out_text = "No such user"
-                        bot.send_message(chat_id=update.message.chat_id,
-                                         text=out_text)
-                        log_print('Show pings of "{0}", by {1}'.format(username_show, username))
+                        self.bot.send_message(chat_id=self.update.message.chat_id,
+                                              text=out_text)
+                        log_print('Show pings of "{0}", by {1}'.format(username_show, self.username))
                     except:
-                        bot.send_message(chat_id=update.message.chat_id,
-                                         text="There was some trouble")
-                        log_print('There was some trouble in pinger function by "{0}"'.format(args_line), username)
+                        self.bot.send_message(chat_id=self.update.message.chat_id,
+                                              text="There was some trouble")
+                        log_print('There was some trouble in pinger function by "{0}"'.format(self.args_line),
+                                  self.username)
                 elif user_match == "delete":
                     try:
-                        delete_match = args[1].lower()
+                        delete_match = self.args[1].lower()
                     except:
                         out_text = "Usage `/ping delete <word>`"
-                        bot.send_message(chat_id=update.message.chat_id,
-                                         parse_mode='markdown',
-                                         text=out_text)
+                        self.bot.send_message(chat_id=self.update.message.chat_id,
+                                              parse_mode='markdown',
+                                              text=out_text)
                         return
                     ses.query(Pingers).filter(and_(
-                        Pingers.chat_id == chat_id,
-                        Pingers.username == username,
+                        Pingers.chat_id == self.chat_id,
+                        Pingers.username == self.username,
                         Pingers.match == delete_match)).delete()
-                    bot.send_message(chat_id=update.message.chat_id,
-                                     text="Deleted")
-                    log_print('Delete pinger "{0}"'.format(args_line))
+                    self.bot.send_message(chat_id=self.update.message.chat_id,
+                                          text="Deleted")
+                    log_print('Delete pinger "{0}"'.format(self.args_line))
 
                 else:
                     count = ses.query(Pingers).filter(and_(
-                        Pingers.chat_id == chat_id,
-                        Pingers.username == username)).count()
+                        Pingers.chat_id == self.chat_id,
+                        Pingers.username == self.username)).count()
                     if count < 10:
                         new_pinger = Pingers(
-                            username=username,
+                            username=self.username,
                             match=user_match,
-                            chat_id=chat_id)
+                            chat_id=self.chat_id)
                         ses.add(new_pinger)
-                        bot.send_message(chat_id=update.message.chat_id,
-                                         text="Successfuly added ping for {0} with match {1}".format(username,
-                                                                                                     user_match))
-                        log_print('Added pinger "{0}"'.format(args_line), username)
+                        self.bot.send_message(chat_id=self.update.message.chat_id,
+                                              text="Successfully added ping for {0} with match {1}".format(self.username,
+                                                                                                          user_match))
+                        log_print('Added pinger "{0}"'.format(self.args_line), self.username)
                     else:
-                        bot.send_message(chat_id=update.message.chat_id,
-                                         text="You can add only 10 matches")
-                        log_print('Pinger limit is settled', username)
+                        self.bot.send_message(chat_id=self.update.message.chat_id,
+                                              text="You can add only 10 matches")
+                        log_print('Pinger limit is settled', self.username)
         except:
-            bot.send_message(chat_id=update.message.chat_id,
-                             text="There was some trouble")
-            log_print('Error while add pinger "{0}"'.format(args_line), username)
+            self.bot.send_message(chat_id=self.update.message.chat_id,
+                                  text="There was some trouble")
+            log_print('Error while add pinger "{0}"'.format(self.args_line), self.username)

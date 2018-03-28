@@ -27,7 +27,7 @@ from bot.helpers import start, bug, hat, chat_id, buttons
 from bot.logger import log_print
 from bot.models import create_table
 from bot.parser import parser
-from bot.pinger import pinger
+from bot.pinger import pinger_handler
 from bot.random_content import random_content
 from bot.tokens.tokens import *
 from bot.weather import weather, wset
@@ -63,7 +63,7 @@ if __name__ == '__main__':
             ),
             CommandHandler('wset', wset, pass_args=True),
             CommandHandler('db', db, pass_args=True),
-            CommandHandler('ping', pinger, pass_args=True),
+            CommandHandler('ping', pinger_handler, pass_args=True),
             CallbackQueryHandler(buttons),
             MessageHandler(Filters.text, parser)
         ]]
