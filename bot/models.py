@@ -39,6 +39,15 @@ class Locations(Base):
     city = Column('city', Unicode(255))
 
 
+class Pingers(Base):
+    __tablename__ = 'pingers'
+
+    id = Column('id', Integer, primary_key=True, autoincrement=True)
+    username = Column('username', Unicode(255))
+    chat_id = Column('chat_id', Unicode(255))
+    match = Column('match', Unicode(255))
+
+
 def create_table():
     flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY
 
@@ -53,18 +62,9 @@ def create_table():
     engine = create_engine(DATABASE)
     metadata = MetaData(engine)
 
-    pingers = Table('pingers', metadata,
-                    Column('id', Integer, primary_key=True, autoincrement=True),
-                    Column('username', Unicode(255)),
-                    Column('chat_id', Unicode(255)),
-                    Column('match', Unicode(255)))
 
     ping_phrases = Table('ping_phrases', metadata,
                          Column('phrase', Unicode(255), primary_key=True))
-
-    # locations = Table('locations', metadata,
-    #                  Column('username', Unicode(255), primary_key=True),
-    #                  Column('city', Unicode(255)))
 
     w_phrases = Table('w_phrases', metadata,
                       Column('match', Unicode(255), primary_key=True))

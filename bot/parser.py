@@ -6,6 +6,7 @@ from bot.logger import log_print
 from bot.models import DATABASE, connector
 from bot.weather import weather
 
+
 # TODO: Decompose into small functions
 def parser(bot, update):
     in_text = update.message.text.lower().replace('ё', 'е').replace(',', '').replace('.', '')
