@@ -62,7 +62,6 @@ def create_table():
     engine = create_engine(DATABASE)
     metadata = MetaData(engine)
 
-
     ping_phrases = Table('ping_phrases', metadata,
                          Column('phrase', Unicode(255), primary_key=True))
 
