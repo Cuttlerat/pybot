@@ -22,19 +22,19 @@ from telegram.ext import (
     CallbackQueryHandler
 )
 
-from db import db
-from helpers import start, bug, hat, chat_id, buttons
-from logger import log_print
-from models import create_table
-from parser import parser
-from pinger import pinger
-from random_content import random_content
-from tokens.tokens import *
-from weather import weather, wset
+from bot.db import db
+from bot.helpers import start, bug, hat, chat_id, buttons
+from bot.logger import log_print
+from bot.models import create_table
+from bot.parser import parser
+from bot.pinger import pinger
+from bot.random_content import random_content
+from bot.tokens.tokens import *
+from bot.weather import weather, wset
 
 if __name__ == '__main__':
     try:
-        from tokens.tokens import LISTEN_IP
+        from bot.tokens.tokens import LISTEN_IP
     except ImportError:
         pass
 

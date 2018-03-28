@@ -1,7 +1,7 @@
 from telegram import InlineKeyboardMarkup
 
-from logger import log_print
-from random_content import random_content
+from bot.logger import log_print
+from bot.random_content import random_content
 
 
 def start(bot, update):

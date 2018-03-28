@@ -1,9 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.exc import ResourceClosedError
 
-from models import DATABASE
-from logger import log_print
-from tokens.tokens import ADMINS
+from bot.models import DATABASE
+from bot.logger import log_print
+from bot.tokens.tokens import ADMINS
 
 
 def db(bot, update, args):

@@ -2,9 +2,9 @@ from sqlalchemy import create_engine, literal, and_, or_
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm.exc import NoResultFound
 
-from logger import log_print
-from models import DATABASE, connector
-from weather import weather
+from bot.logger import log_print
+from bot.models import DATABASE, connector
+from bot.weather import weather
 
 # TODO: Decompose into small functions
 def parser(bot, update):

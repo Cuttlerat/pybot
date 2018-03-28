@@ -3,9 +3,9 @@ import re
 from sqlalchemy import create_engine, and_
 from sqlalchemy.ext.automap import automap_base
 
-from logger import log_print
-from models import DATABASE, connector
-from tokens.tokens import ADMINS
+from bot.logger import log_print
+from bot.models import DATABASE, connector
+from bot.tokens.tokens import ADMINS
 
 
 def pinger(bot, update, args):
