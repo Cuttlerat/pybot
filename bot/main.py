@@ -22,15 +22,15 @@ from telegram.ext import (
     CallbackQueryHandler
 )
 
-from bot.db import db
-from bot.helpers import start, bug, hat, chat_id, buttons
+from bot.handlers.db import database_handler
+from bot.handlers.helpers import start, bug, hat, chat_id, buttons
+from bot.handlers.parser import parser
+from bot.handlers.pinger import pinger_handler
+from bot.handlers.random_content import random_content
 from bot.logger import log_print
-from bot.models import create_table
-from bot.parser import parser, weather_parser, answer_parser, ping_parser
-from bot.pinger import pinger_handler
-from bot.random_content import random_content
+from bot.data.models import create_table
 from bot.tokens.tokens import *
-from bot.weather import weather, wset
+from bot.handlers.weather import weather, wset
 
 if __name__ == '__main__':
     try:
@@ -62,7 +62,7 @@ if __name__ == '__main__':
                 random_content, pass_args=True
             ),
             CommandHandler('wset', wset, pass_args=True),
-            CommandHandler('db', db, pass_args=True),
+            CommandHandler('db', database_handler, pass_args=True),
             CommandHandler('ping', pinger_handler, pass_args=True),
             CallbackQueryHandler(buttons),
             MessageHandler(Filters.text, parser)

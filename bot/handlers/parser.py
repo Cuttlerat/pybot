@@ -1,28 +1,24 @@
-from sqlalchemy import create_engine, literal, and_, or_
-from sqlalchemy.ext.automap import automap_base
+from sqlalchemy import literal, and_, or_
 from sqlalchemy.orm.exc import NoResultFound
 
+from bot.handlers.helpers import prepare_message
 from bot.logger import log_print
-from bot.models import DATABASE, connector, ENGINE, WeatherPhrases, Answers, PingPhrases, Pingers, PingExcludes
-from bot.weather import weather
+from bot.data.models import connector, ENGINE, WeatherPhrases, Answers, PingPhrases, Pingers, PingExcludes
+from bot.handlers.weather import weather
 
 
 def weather_parser(bot, update):
-    in_text = update.message.text.lower().replace('ё', 'е').replace(',', '').replace('.', '')
-    # ------------ Weather ----------------
+    in_text = prepare_message(update)
+
     with connector(ENGINE) as ses:
-        try:
-            phrase = "".join(ses.query(WeatherPhrases.match).filter(
-                literal(in_text.lower()).contains(WeatherPhrases.match)).one())
-            weather(bot, update, in_text.lower()[in_text.lower().find(phrase) + len(phrase):].split())
-            return
-        except NoResultFound:
-            pass
+        phrase = "".join(ses.query(WeatherPhrases.match).filter(
+            literal(in_text.lower()).contains(WeatherPhrases.match)).one())
+        weather(bot, update, in_text.lower()[in_text.lower().find(phrase) + len(phrase):].split())
 
 
 def answer_parser(bot, update):
-    in_text = update.message.text.lower().replace('ё', 'е').replace(',', '').replace('.', '')
-    # ------------ Answer -----------------
+    in_text = prepare_message(update)
+
     with connector(ENGINE) as ses:
         out_text = ses.query(Answers.answer).filter(
             literal(in_text).contains(Answers.match))
@@ -32,8 +28,8 @@ def answer_parser(bot, update):
 
 
 def ping_parser(bot, update):
-    in_text = update.message.text.lower().replace('ё', 'е').replace(',', '').replace('.', '')
-    # ------------ Ping -----------------
+    in_text = prepare_message(update)
+
     with connector(ENGINE) as ses:
         in_text_list = in_text.split()
         username = update.message.from_user.username
@@ -87,11 +83,7 @@ def ping_parser(bot, update):
             pass
 
 
-# TODO: Decompose into small functions
 def parser(bot, update):
     weather_parser(bot, update)
     ping_parser(bot, update)
     answer_parser(bot, update)
-
-
-

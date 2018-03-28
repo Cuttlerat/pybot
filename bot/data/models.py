@@ -3,7 +3,7 @@ import os
 import sys
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, Unicode
+from sqlalchemy import create_engine, Column, Integer, Unicode
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
 
@@ -81,21 +81,4 @@ def create_table():
     else:
         os.fdopen(db_check_file, 'w')
 
-    engine = create_engine(DATABASE)
-    metadata = MetaData(engine)
-
-    # ping_phrases = Table('ping_phrases', metadata,
-    #                     Column('phrase', Unicode(255), primary_key=True))
-
-    # w_phrases = Table('w_phrases', metadata,
-    #                  Column('match', Unicode(255), primary_key=True))
-
-    # answers = Table('answers', metadata,
-    #                Column('match', Unicode(255), primary_key=True),
-    #                Column('string', Unicode(255)))
-
-    #ping_exclude = Table('ping_exclude', metadata,
-    #                     Column('match', Unicode(255), primary_key=True))
-
-    metadata.create_all()
     meta.create_all(ENGINE)

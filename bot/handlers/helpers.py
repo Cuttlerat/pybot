@@ -1,7 +1,7 @@
 from telegram import InlineKeyboardMarkup
 
 from bot.logger import log_print
-from bot.random_content import random_content
+from bot.handlers.random_content import random_content
 
 
 def start(bot, update):
@@ -38,13 +38,13 @@ def hat(bot, update):
 
 
 def chat_id(bot, update):
-    chat_id = update.message.chat_id
+    current_chat_id = update.message.chat_id
     username = update.message.from_user.username
-    bot.send_message(chat_id=chat_id,
-                     text="`{0}`".format(chat_id),
+    bot.send_message(chat_id=current_chat_id,
+                     text="`{0}`".format(current_chat_id),
                      reply_to_message_id=update.message.message_id,
                      parse_mode='markdown')
-    log_print('Chat id {0}'.format(chat_id), username)
+    log_print('Chat id {0}'.format(current_chat_id), username)
 
 
 def buttons(bot, update):
@@ -60,3 +60,7 @@ def buttons(bot, update):
         command, value = query.data.split('_')
         query.message.text = '/{}'.format(command)
         random_content(bot, query, [value])
+
+
+def prepare_message(update):
+    return update.message.text.lower().replace('ё', 'е').replace(',', '').replace('.', '')

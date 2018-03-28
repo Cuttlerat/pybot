@@ -1,12 +1,12 @@
 from sqlalchemy import create_engine
 from sqlalchemy.exc import ResourceClosedError
 
-from bot.models import DATABASE
+from bot.data.models import DATABASE
 from bot.logger import log_print
 from bot.tokens.tokens import ADMINS
 
 
-def db(bot, update, args):
+def database_handler(bot, update, args):
     if update.message.from_user.username not in ADMINS:
         out_text = "You are not an administrator. The incident will be reported"
         command = "not an administrator"

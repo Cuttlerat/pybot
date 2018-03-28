@@ -3,7 +3,7 @@ import re
 from sqlalchemy import and_
 
 from bot.logger import log_print
-from bot.models import connector, ENGINE, Pingers
+from bot.data.models import connector, ENGINE, Pingers
 from bot.tokens.tokens import ADMINS
 
 
