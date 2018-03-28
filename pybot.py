@@ -11,32 +11,21 @@
 #
 # ===============================================================================
 
-import errno
 import json
 import logging
-import os
 import re
 import sqlite3
-import sys
-from contextlib import contextmanager
 
-import pyowm
 import requests
 from bs4 import BeautifulSoup
 from sqlalchemy import (
     create_engine,
     literal,
     and_,
-    or_,
-    MetaData,
-    Unicode,
-    Integer,
-    Table,
-    Column
+    or_
 )
 from sqlalchemy.exc import ResourceClosedError
 from sqlalchemy.ext.automap import automap_base
-from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import NoResultFound
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -47,189 +36,13 @@ from telegram.ext import (
     CallbackQueryHandler
 )
 
+from database import connector, DATABASE, create_table
 from helpers import start, bug, log_print
 from tokens.tokens import *
-from weather import get_emoji
+from weather import weather, wset
+
 
 # ===========FUNCTIONS========================================================
-
-
-# ==== End of start function =================================================
-
-
-# ==== End of get_emoji function =============================================
-
-
-def weather(bot, update, args):
-    city = " ".join(args)
-    username = update.message.from_user.username
-
-    engine = create_engine(DATABASE)
-    Base = automap_base()
-    Base.prepare(engine, reflect=True)
-
-    locations = Base.classes.locations
-
-    if not city:
-        with connector(engine) as ses:
-            try:
-                city = ses.query(locations.city).filter(
-                    locations.username == username).one()
-                city = "".join([i for i in city])
-            except NoResultFound:
-                try:
-                    city = ses.query(locations.city).filter(
-                        locations.username == "default_city").one()
-                    city = "".join([i for i in city])
-                except NoResultFound:
-                    if username in ADMINS:
-                        error_message = '''
-                        You didn't set the default city
-                        You can add default city by this command:
-                        `/db insert into locations(username,city) \
-                        values(\"default_city\",\"YOUR CITY HERE\")`'''
-                        error_message = "\n".join(
-                            [i.strip() for i in error_message.split('\n')])
-                    else:
-                        error_message = "Administrator didn't set the default city\nTry /w City"
-                    bot.send_message(chat_id=update.message.chat_id,
-                                     parse_mode='markdown', text=error_message)
-                    return
-
-    try:
-        owm = pyowm.OWM(WEATHER_TOKEN, language='en')
-    except:
-        error_message = "Invalid API token"
-        bot.send_message(chat_id=update.message.chat_id, text=error_message)
-        log_print('Weather "{0}"'.format(error_message), username)
-        return
-
-    try:
-        observation = owm.weather_at_place(city)
-    except pyowm.exceptions.not_found_error.NotFoundError:
-        error_message = "Wrong location"
-        bot.send_message(chat_id=update.message.chat_id, text=error_message)
-        log_print('"{0}"'.format(error_message), username)
-        return
-
-    forecast = owm.three_hours_forecast(city)
-    now_weather = observation.get_weather()
-    city = observation.get_location().get_name()
-
-    weathers = {}
-
-    # Today
-    today = pyowm.timeutils.next_three_hours()
-    weather = forecast.get_weather_at(today)
-    temp = str(round(weather.get_temperature(unit='celsius')["temp"]))
-    if temp[0] != '-' and temp != "0":
-        weathers["today", "temp", 0] = '+' + temp
-    else:
-        weathers["today", "temp", 0] = temp
-    weathers["today", "emoji", 0] = get_emoji(weather.get_status())
-    status = weather.get_detailed_status()
-    weathers["today", "status", 0] = status[0].upper() + status[1:]
-
-    # Tomorrow
-    for i in [6, 12, 18]:
-        weather = forecast.get_weather_at(pyowm.timeutils.tomorrow(i, 0))
-        temp = str(round(weather.get_temperature('celsius')["temp"]))
-        if temp[0] != '-' and temp != "0":
-            weathers["tomorrow", "temp", i] = '+' + temp
-        else:
-            weathers["tomorrow", "temp", i] = temp
-        weathers["tomorrow", "emoji", i] = get_emoji(weather.get_status())
-        status = weather.get_detailed_status()
-        weathers["tomorrow", "status", i] = status[0].upper() + status[1:]
-
-    now_temp = str(round(now_weather.get_temperature(unit='celsius')["temp"]))
-    if now_temp[0] != '-' and now_temp[0] != "0":
-        now_temp = '+' + now_temp
-    now_status = now_weather.get_detailed_status()
-    now_status = now_status[0].upper() + now_status[1:]
-    now_emoji = get_emoji(now_weather.get_status())
-
-    try:
-        message = ''.join("""
-        *Now:*
-        *{0}:* {1} {2} {3}
-
-        *In near future:*
-        {4} {5} {6}
-
-        *Tomorrow:*
-        *Morning:* {7} {8} {9}
-        *Noon:* {10} {11} {12}
-        *Evening:* {13} {14} {15}
-        """.format(city,
-                   now_temp,
-                   now_emoji,
-                   now_status,
-                   *[weathers[i] for i in weathers]))
-    except IndexError:
-        error_message = "Something wrong with API:\n\n{}".format(weathers)
-        bot.send_message(chat_id=update.message.chat_id, text=error_message)
-        log_print('"{0}"'.format(error_message), username)
-        return
-
-    message = "\n".join([k.strip() for k in message.split('\n')])
-
-    bot.send_message(chat_id=update.message.chat_id,
-                     parse_mode="markdown", text=message)
-
-    log_print('Weather "{0}"'.format(city), username)
-
-
-# ==== End of weather function ===============================================
-
-
-def wset(bot, update, args):
-    city = " ".join(args)
-    username = update.message.from_user.username
-
-    engine = create_engine(DATABASE)
-    Base = automap_base()
-    Base.prepare(engine, reflect=True)
-
-    locations = Base.classes.locations
-
-    with connector(engine) as ses:
-        try:
-            ses.query(locations.username).filter(
-                locations.username == username).one()
-            if not city:
-                w_city = "".join(ses.query(locations.city).filter(
-                    locations.username == username).one())
-                out_text = "@{0} city is {1}".format(username, w_city)
-                city = 'deleted'
-            elif city == "delete":
-                ses.query(locations.username).filter(
-                    locations.username == username).delete()
-                out_text = "Deleted information about @{0}".format(username)
-                city = 'deleted'
-            else:
-                ses.query(locations).filter(
-                    locations.username == username).update({'city': city})
-                out_text = "New city for @{0}: {1}".format(username, city)
-
-        except NoResultFound:
-            if not city or city == "delete":
-                out_text = "Usage:\n/wset <city> - Set default city for /w\n/wset delete - Delete your default city".format(
-                    username)
-                city = 'none'
-            else:
-                new_location = locations(
-                    username=username,
-                    city=city)
-                ses.add(new_location)
-                out_text = "Added @{0}: {1}".format(username, city)
-
-    bot.send_message(chat_id=update.message.chat_id, text=out_text)
-    log_print('Wset "{0}"'.format(out_text))
-
-
-# ==== End of wset function ===============================================
-
 
 def random_content(bot, update, args):
     MAX_QUOTES = 5
@@ -655,46 +468,6 @@ def chat_id(bot, update):
 # ==== End of chat_id function ===============================================
 
 
-def create_table():
-    flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY
-
-    try:
-        db_check_file = os.open(DATABASE_HOST, flags)
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            raise
-    else:
-        os.fdopen(db_check_file, 'w')
-
-    engine = create_engine(DATABASE)
-    metadata = MetaData(engine)
-
-    pingers = Table('pingers', metadata,
-                    Column('id', Integer, primary_key=True, autoincrement=True),
-                    Column('username', Unicode(255)),
-                    Column('chat_id', Unicode(255)),
-                    Column('match', Unicode(255)))
-
-    ping_phrases = Table('ping_phrases', metadata,
-                         Column('phrase', Unicode(255), primary_key=True))
-
-    locations = Table('locations', metadata,
-                      Column('username', Unicode(255), primary_key=True),
-                      Column('city', Unicode(255)))
-
-    w_phrases = Table('w_phrases', metadata,
-                      Column('match', Unicode(255), primary_key=True))
-
-    answers = Table('answers', metadata,
-                    Column('match', Unicode(255), primary_key=True),
-                    Column('string', Unicode(255)))
-
-    ping_exclude = Table('ping_exclude', metadata,
-                         Column('match', Unicode(255), primary_key=True))
-
-    metadata.create_all()
-
-
 # ==== End of create_table function ===============================================
 
 
@@ -716,21 +489,6 @@ def buttons(bot, update):
 # ==== End of buttons function ===============================================
 
 
-@contextmanager
-def connector(engine):
-    session = Session(engine)
-    try:
-        yield session
-        session.commit()
-    except:
-        error = str(sys.exc_info())
-        log_print("Error is: ", error)
-        session.rollback()
-        raise
-    finally:
-        session.close()
-
-
 # ============================================================================
 
 if __name__ == '__main__':
@@ -743,8 +501,6 @@ if __name__ == '__main__':
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         level=logging.INFO
     )
-
-    DATABASE = 'sqlite:///{}'.format(DATABASE_HOST)
 
     log_print('Started')
 
