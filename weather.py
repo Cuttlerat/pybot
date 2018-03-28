@@ -1,25 +1,9 @@
 import pyowm
 from sqlalchemy.orm.exc import NoResultFound
 
-from database import connector, Locations, ENGINE
-from helpers import log_print
+from models import connector, Locations, ENGINE
+from logger import log_print
 from tokens.tokens import ADMINS, WEATHER_TOKEN
-
-
-def get_emoji(weather_status):
-    emojis = {
-        'Clouds': u'\U00002601',
-        'Clear': u'\U00002600',
-        'Rain': u'\U0001F327',
-        'Extreme': u'\U0001F32A',
-        'Snow': u'\U0001F328',
-        'Thunderstorm': u'\U000026C8',
-        'Mist': u'\U0001F32B',
-        'Haze': u'\U0001F324',
-        'notsure': u'\U0001F648'
-    }
-
-    return "".join([emojis[i] for i in emojis if weather_status == i])
 
 
 def weather(bot, update, args):
@@ -173,3 +157,19 @@ def wset(bot, update, args):
 
     bot.send_message(chat_id=update.message.chat_id, text=out_text)
     log_print('Wset "{0}"'.format(out_text))
+
+
+def get_emoji(weather_status):
+    emojis = {
+        'Clouds': u'\U00002601',
+        'Clear': u'\U00002600',
+        'Rain': u'\U0001F327',
+        'Extreme': u'\U0001F32A',
+        'Snow': u'\U0001F328',
+        'Thunderstorm': u'\U000026C8',
+        'Mist': u'\U0001F32B',
+        'Haze': u'\U0001F324',
+        'notsure': u'\U0001F648'
+    }
+
+    return "".join([emojis[i] for i in emojis if weather_status == i])

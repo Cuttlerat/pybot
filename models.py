@@ -7,7 +7,7 @@ from sqlalchemy import create_engine, MetaData, Table, Column, Integer, Unicode
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
 
-from helpers import log_print
+from logger import log_print
 from tokens.tokens import DATABASE_HOST
 
 
@@ -27,8 +27,17 @@ def connector(engine):
 
 
 DATABASE = 'sqlite:///{}'.format(DATABASE_HOST)
-Base = declarative_base()
 ENGINE = create_engine(DATABASE)
+Base = declarative_base()
+meta = Base.metadata
+
+
+class Locations(Base):
+    __tablename__ = 'locations'
+
+    username = Column('username', Unicode(255), primary_key=True)
+    city = Column('city', Unicode(255))
+
 
 def create_table():
     flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY
@@ -53,9 +62,9 @@ def create_table():
     ping_phrases = Table('ping_phrases', metadata,
                          Column('phrase', Unicode(255), primary_key=True))
 
-    locations = Table('locations', metadata,
-                      Column('username', Unicode(255), primary_key=True),
-                      Column('city', Unicode(255)))
+    # locations = Table('locations', metadata,
+    #                  Column('username', Unicode(255), primary_key=True),
+    #                  Column('city', Unicode(255)))
 
     w_phrases = Table('w_phrases', metadata,
                       Column('match', Unicode(255), primary_key=True))
@@ -68,10 +77,4 @@ def create_table():
                          Column('match', Unicode(255), primary_key=True))
 
     metadata.create_all()
-
-
-class Locations(Base):
-    __tablename__ = 'locations'
-
-    username = Column('username', Unicode(255), primary_key=True)
-    city = Column('city', Unicode(255))
+    meta.create_all(ENGINE)
