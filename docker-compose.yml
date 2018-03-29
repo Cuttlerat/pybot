@@ -7,18 +7,6 @@ services:
             context: .
             dockerfile: dockerfiles/pybot.Dockerfile
         volumes:
-          - ./data:/pybot/data
-          - ./tokens:/pybot/tokens:ro
+          - ./bot/data:/pybot/data
+          - ./bot/tokens:/pybot/tokens:ro
         restart: always
-
-    builder:
-        image: builder
-        build:
-            context: .
-            dockerfile: dockerfiles/builder.Dockerfile
-        volumes:
-          - .:/pybot
-          - /var/run/docker.sock:/var/run/docker.sock
-        restart: always
-        depends_on:
-          - pybot

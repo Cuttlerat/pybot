@@ -104,5 +104,5 @@ ENV/
 bot/tokens/*
 
 # db
-data/*
+bot/data/*
 
