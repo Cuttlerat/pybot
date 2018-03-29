@@ -1,19 +1,23 @@
 from sqlalchemy import literal, and_, or_
 from sqlalchemy.orm.exc import NoResultFound
 
-from bot.handlers.helpers import prepare_message
-from bot.logger import log_print
-from bot.data.models import connector, ENGINE, WeatherPhrases, Answers, PingPhrases, Pingers, PingExcludes
-from bot.handlers.weather import weather
+from handlers.helpers import prepare_message
+from logger import log_print
+from data.models import connector, ENGINE, WeatherPhrases, Answers, PingPhrases, Pingers, PingExcludes
+from handlers.weather import weather
 
 
 def weather_parser(bot, update):
     in_text = prepare_message(update)
 
     with connector(ENGINE) as ses:
-        phrase = "".join(ses.query(WeatherPhrases.match).filter(
-            literal(in_text.lower()).contains(WeatherPhrases.match)).one())
-        weather(bot, update, in_text.lower()[in_text.lower().find(phrase) + len(phrase):].split())
+        try:
+            phrase = "".join(ses.query(WeatherPhrases.match).filter(
+                literal(in_text.lower()).contains(WeatherPhrases.match)).one())
+            weather(bot, update, in_text.lower()[in_text.lower().find(phrase) + len(phrase):].split())
+            return
+        except NoResultFound:
+            pass
 
 
 def answer_parser(bot, update):

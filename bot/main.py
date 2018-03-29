@@ -22,15 +22,15 @@ from telegram.ext import (
     CallbackQueryHandler
 )
 
-from bot.handlers.db import database_handler
-from bot.handlers.helpers import start, bug, hat, chat_id, buttons
-from bot.handlers.parser import parser
-from bot.handlers.pinger import pinger_handler
-from bot.handlers.random_content import random_content
-from bot.logger import log_print
-from bot.data.models import create_table
-from bot.tokens.tokens import *
-from bot.handlers.weather import weather, wset
+from handlers.db import database_handler
+from handlers.helpers import start, bug, hat, chat_id, buttons
+from handlers.parser import parser
+from handlers.pinger import pinger_handler
+from handlers.random_content import random_content
+from logger import log_print
+from data.models import create_table
+from tokens.tokens import *
+from handlers.weather import weather, wset
 
 if __name__ == '__main__':
     try:

@@ -7,8 +7,8 @@ from sqlalchemy import create_engine, Column, Integer, Unicode
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
 
-from bot.logger import log_print
-from bot.tokens.tokens import DATABASE_HOST
+from logger import log_print
+from tokens.tokens import DATABASE_HOST
 
 
 @contextmanager

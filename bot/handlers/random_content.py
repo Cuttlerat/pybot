@@ -4,7 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 
-from bot.logger import log_print
+from logger import log_print
 
 
 def random_content(bot, update, args):
