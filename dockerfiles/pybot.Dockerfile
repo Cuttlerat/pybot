@@ -6,5 +6,5 @@ RUN apk add --update --no-cache tzdata \
 COPY ./requirements /pybot/requirements
 WORKDIR /pybot
 RUN pip install -r requirements
-COPY ./pybot.py /pybot/pybot.py
-ENTRYPOINT [ "python", "pybot.py" ]
+COPY ./bot /pybot
+ENTRYPOINT [ "python", "main.py" ]
