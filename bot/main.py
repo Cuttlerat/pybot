@@ -28,7 +28,7 @@ from handlers.parser import parser
 from handlers.pinger import pinger_handler
 from handlers.random_content import random_content
 from logger import log_print
-from data.models import create_table
+from models.models import create_table
 from tokens.tokens import *
 from handlers.weather import weather, wset
 

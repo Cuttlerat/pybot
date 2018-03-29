@@ -3,7 +3,7 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from handlers.helpers import prepare_message
 from logger import log_print
-from data.models import connector, ENGINE, WeatherPhrases, Answers, PingPhrases, Pingers, PingExcludes
+from models.models import connector, ENGINE, WeatherPhrases, Answers, PingPhrases, Pingers, PingExcludes
 from handlers.weather import weather
 
 

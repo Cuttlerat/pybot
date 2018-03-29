@@ -1,7 +1,7 @@
 import pyowm
 from sqlalchemy.orm.exc import NoResultFound
 
-from data.models import connector, Locations, ENGINE
+from models.models import connector, Locations, ENGINE
 from logger import log_print
 from tokens.tokens import ADMINS, WEATHER_TOKEN
 

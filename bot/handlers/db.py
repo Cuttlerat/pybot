@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.exc import ResourceClosedError
 
-from data.models import DATABASE
+from models.models import DATABASE
 from logger import log_print
 from tokens.tokens import ADMINS
 
