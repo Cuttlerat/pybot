@@ -5,7 +5,7 @@ services:
         image: pybot
         build:
             context: .
-            dockerfile: dockerfiles/pybot.Dockerfile
+            dockerfile: dockerfile/pybot.Dockerfile
         volumes:
           - ./bot/data:/pybot/data
           - ./bot/tokens:/pybot/tokens:ro
