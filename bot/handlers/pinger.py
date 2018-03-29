@@ -2,9 +2,9 @@ import re
 
 from sqlalchemy import and_
 
-from bot.logger import log_print
-from bot.data.models import connector, ENGINE, Pingers
-from bot.tokens.tokens import ADMINS
+from logger import log_print
+from data.models import connector, ENGINE, Pingers
+from tokens.tokens import ADMINS
 
 
 def pinger_handler(bot, update, args):
