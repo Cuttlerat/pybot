@@ -140,7 +140,7 @@ Examples:
 `/ping show all` - Show all mathces for all users in this chat  
 `/ping delete @username match` - Delete a match for this user if it exists  
 
-For add and delete commands you also can use multiple usernames at once, example:
+For add and delete commands you also can use multiple usernames at once, example:  
 `/ping @user_1 @user_2 @user_3 match`  
 `/ping delete @user_1 @user_2 @user_3 match`  
 
