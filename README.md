@@ -161,7 +161,7 @@ Usage:
 
 Examples:  
 `/ping match` - Add a match for you. You can have only 10 matches, or more if an administrator will add it for you  
-`/ping show @user_1` - Show all matches for user_1  
+`/ping show @user_1` - Show all matches for @user_1  
 `/ping me` - Show all yours matches  
 `/ping delete match` - Delete a match  
 
