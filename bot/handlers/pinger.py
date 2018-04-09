@@ -38,8 +38,8 @@ class PingerCommand:
             if not match and not command:
                 raise Exception
         except:
-            usage_text = "Usage: \n`/ping username <word>`\n`/ping show <username>`\n`/ping all`\n`/ping delete " \
-                         "username <word>` "
+            usage_text = "Usage: \n`/ping @username <word>`\n`/ping show @username`\n`/ping all`\n`/ping delete " \
+                         "@username <word>` "
             self.bot.send_message(chat_id=self.update.message.chat_id,
                                   parse_mode='markdown',
                                   text=usage_text)
@@ -78,7 +78,7 @@ class PingerCommand:
                 if not user_match:
                     raise Exception
             except:
-                out_text = "Usage: \n`/ping <word>`\n`/ping show <username>`\n`/ping me`\n`/ping delete <word>`"
+                out_text = "Usage: \n`/ping <word>`\n`/ping show @username`\n`/ping me`\n`/ping delete <word>`"
                 self.bot.send_message(chat_id=self.update.message.chat_id,
                                       parse_mode='markdown',
                                       text=out_text)
@@ -126,7 +126,7 @@ class PingerCommand:
         try:
             username_show = re.sub('[@]', '', self.args[1])
         except:
-            out_text = "Usage `/ping show <username>`"
+            out_text = "Usage `/ping show @username`"
             self.bot.send_message(chat_id=self.update.message.chat_id,
                                   parse_mode='markdown',
                                   text=out_text)
@@ -156,7 +156,7 @@ class PingerCommand:
             if not p_usernames:
                 p_usernames = [self.username]
         except:
-            out_text = "Usage `/ping delete username <word>`"
+            out_text = "Usage `/ping delete @username <word>`"
             self.bot.send_message(chat_id=self.update.message.chat_id,
                                   parse_mode='markdown',
                                   text=out_text)

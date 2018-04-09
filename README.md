@@ -129,9 +129,9 @@ Ping command is different for admins and common users
 ```
 Usage: 
 /ping @username <word>
-/ping show <username>
+/ping show @username
 /ping all
-/ping delete username <word>
+/ping delete @username <word>
 ```
 
 Examples:  
@@ -152,7 +152,7 @@ You can delete all matches for user:
 ```
 Usage: 
 /ping <word>
-/ping show <username>
+/ping show @username
 /ping me
 /ping delete <word>
 ```
