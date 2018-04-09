@@ -134,18 +134,17 @@ Usage:
 /ping delete username <word>
 ```
 
+Examples:  
 `/ping @username match` - Add a ping for @username with match  
 `/ping show @username` - Show all matches of this user in this chat  
 `/ping show all` - Show all mathces for all users in this chat  
 `/ping delete @username match` - Delete a match for this user if it exists  
 
 For add and delete commands you also can use multiple usernames at once, example:
-
-`/ping @user_1 @user_2 @user_3 match`
-`/ping delete @user_1 @user_2 @user_3 match`
+`/ping @user_1 @user_2 @user_3 match`  
+`/ping delete @user_1 @user_2 @user_3 match`  
 
 You can delete all matches for user:
-
 `/ping delete @username all`
 
 ##### Common user
@@ -158,6 +157,7 @@ Usage:
 /ping delete <word>
 ```
 
+Examples:  
 `/ping match` - Add a match for you. You can have only 10 matches, or more if an administrator will add it for you  
 `/ping show @user_1` - Show all matches for user_1  
 `/ping me` - Show all yours matches  
