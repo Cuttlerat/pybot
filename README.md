@@ -141,11 +141,13 @@ Examples:
 `/ping delete @username match` - Delete a match for this user if it exists  
 
 For add and delete commands you also can use multiple usernames at once, example:  
-`/ping @user_1 @user_2 @user_3 match`  
-`/ping delete @user_1 @user_2 @user_3 match`  
+```
+/ping @user_1 @user_2 @user_3 match
+/ping delete @user_1 @user_2 @user_3 match
+```
 
-You can delete all matches for user:
-`/ping delete @username all`
+You can delete all matches for user:  
+`/ping delete @username all`  
 
 ##### Common user
 
