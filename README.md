@@ -71,6 +71,7 @@ Cutltebot: Hi!
 ```
 
 ### Ping
+#### Add it into database
 
 You also can use the `/ping` command for this, and so all the others (besides the administrator) can use this to add trigers but not more than 10
 
@@ -109,7 +110,7 @@ Cuttlerat: ping all except kosc
 Cuttlebot: @Cuttlerat
 ```
 
-### Ping
+#### Add with /ping command
 
 This command setting notifications for users.
 When you will send a message with a match which in `ping_phrases` table and with match of user, bot will reply on your message with `@username` in his reply and that user will get a notification even if he disabled them
@@ -123,7 +124,7 @@ Example:
 Ping command is different for admins and common users
 
 
-#### Admin
+##### Admin
 
 ```
 Usage: 
@@ -144,11 +145,11 @@ For add and delete commands you also can use multiple usernames at once, example
 `/ping @user_1 @user_2 @user_3 match`
 `/ping delete @user_1 @user_2 @user_3 match`
 
-You can delete all maches for user:
+You can delete all matches for user:
 
 `/ping delete @username all`
 
-#### Common user
+##### Common user
 
 ```
 Usage: 
@@ -158,9 +159,9 @@ Usage:
 /ping delete <word>
 ```
 
-`/ping match` - Add a match for you
+`/ping match` - Add a match for you. You can have only 10 matches, or more if an administrator will add it for you
 `/ping show @user_1` - Show all matches for user_1
-`/ping me` - Show all yours mathes
+`/ping me` - Show all yours matches
 `/ping delete match` - Delete a match
 
 And is it! Enjoy your bot!
