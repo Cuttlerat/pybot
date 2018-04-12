@@ -2,7 +2,7 @@ from services.crypto_compare import CryptoCompare
 
 
 def crypto(bot, update):
-    current_rate = CryptoCompare.get_rate(["BTC", "BCH", "ETH", "XMR"], ["USD"])
+    current_rate = CryptoCompare.get_rate(["BTC", "BCH", "ETH", "XMR", "XMO"], ["USD"])
     message = "```\n"
     for crypt, rates in sorted(current_rate.items()):
         message += "1 " + str(crypt) + " = $" + str(round(rates['USD'], 2))
