@@ -7,6 +7,8 @@ image_resource:
     tag: 3.6-alpine
 inputs:
   - name: pybot
+outputs:
+  - name: coverage
 run:
   dir: pybot
   path: sh
@@ -30,3 +32,4 @@ run:
         - test_one
       EOF
       python -m pytest --cov=. --cov-report html --cov-config .coveragerc --log-cli-level 1 --basetemp=temp tests/
+      cp -r htmlcov ../../coverage/
