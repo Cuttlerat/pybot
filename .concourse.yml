@@ -32,4 +32,4 @@ run:
         - test_one
       EOF
       python -m pytest --cov=. --cov-report html --cov-config .coveragerc --log-cli-level 1 --basetemp=temp tests/
-      cp -r htmlcov ../../coverage/
+      cp -r ../dockerfile/coverage.Dockerfile ../dockerfile/conf.d htmlcov ../../coverage/
