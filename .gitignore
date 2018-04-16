@@ -106,5 +106,8 @@ bot/config/*
 # db
 bot/data/*
 
+# db
+bot/temp/*
+
 # test cache
 .pytest_cache
