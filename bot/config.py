@@ -35,7 +35,8 @@ class Config:
         self.__tg_admins = cfg['admins'] if 'admins' in cfg else []
         self.__tg_get_mute = False
 
-        self.__database = 'sqlite:///{}'.format(self.__db_host) if self.__db_host is not None else None
+        self.__database = 'sqlite:///{}?check_same_thread=False'.format(
+            self.__db_host) if self.__db_host is not None else None
         self.__engine = create_engine(self.__database) if self.__database is not None else None
 
     def telegram_token(self):
