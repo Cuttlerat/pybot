@@ -56,7 +56,11 @@ def mute(config, bot, update):
     user_id=update.message.from_user.id
     if config.get_mute():
         try:
-            log_print("Muted", username=user_id, chat_id=chat_id, level="INFO", command="mute")
+            log_print("Muted",
+                      username=user_id,
+                      chat_id=chat_id,
+                      level="INFO",
+                      command="mute")
             bot.restrict_chat_member(chat_id, user_id, until_date=time()+300)
         except BadRequest:
             return
