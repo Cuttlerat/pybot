@@ -4,7 +4,7 @@ import json
 
 
 def log_print(message, **kwargs):
-    timestamp = datetime.now(tzlocal()).strftime("%d/%b/%YT%H:%M:%SZ")
+    timestamp = datetime.now(tzlocal()).strftime("%Y-%m-%dT%H:%M:%SZ")
     log_message = {"timestamp": timestamp, "message": message, **kwargs}
     log_message = json.dumps(log_message)
     print(log_message)
