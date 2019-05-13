@@ -39,7 +39,12 @@ class Pinger:
                 out_text = "No such user"
             bot.send_message(chat_id=update.message.chat_id,
                              text=out_text)
-            log_print('Show pings of "@{0}", by {1}'.format(username, update.message.from_user.username))
+            log_print("Show pings",
+                      chat_id=update.message.chat_id, 
+                      searched_username=username,
+                      username=update.message.from_user.username,
+                      level="INFO",
+                      command="ping_show")
 
     def show_all(self, bot, update):
         if update.message.from_user.username not in self.config.admins():
@@ -94,6 +99,13 @@ class Pinger:
                     else:
                         result.delete()
                         answer += "Match `{0}` for user `@{1}` deleted\n".format(match, username)
+                        log_print("Match deleted", 
+                                  chat_id=update.message.chat_id,
+                                  ping_username=username, 
+                                  match=match, 
+                                  username=update.message.from_user.username, 
+                                  level="INFO",
+                                  command="ping_delete")
         bot.send_message(chat_id=update.message.chat_id,
                          parse_mode='markdown',
                          text=answer)
@@ -135,12 +147,12 @@ class Pinger:
         usernames = [name[1:] for name in args if name[0] == "@"]
         matches = [match.lower().replace('ё', 'е') for match in args if match[0] != "@"]
 
-        user = update.message.from_user.username
+        username = update.message.from_user.username
         if not usernames:
             usernames = [user]
 
         if not matches:
-            if user not in self.config.admins():
+            if username not in self.config.admins():
                 usage_text = "Usage:\n`/ping_add[_me] [match]`"
             else:
                 usage_text = "Usage:\n`/ping_add[_me] [@username] [match]`\n`/ping_add [match]`"
@@ -149,22 +161,26 @@ class Pinger:
                              text=usage_text)
             return
 
-        if user not in self.config.admins() and (len(usernames) > 1 or len(
-                list(filter(lambda x: x != user, usernames))) != 0):
+        if username not in self.config.admins() and (len(usernames) > 1 or len(
+                list(filter(lambda x: x != username, usernames))) != 0):
             message = "Adding pings for another users is only allowed for admins."
             bot.send_message(chat_id=update.message.chat_id,
                              text=message)
             return
 
-        if user not in self.config.admins():
+        if username not in self.config.admins():
             with connector(self.config.engine()) as ses:
                 count = ses.query(Pingers).filter(and_(
                     Pingers.chat_id == update.message.chat_id,
-                    Pingers.username == user)).count()
+                    Pingers.username == username)).count()
             if count + len(matches) > 10:
                 bot.send_message(chat_id=update.message.chat_id,
                                  text="You can add only 10 matches")
-                log_print('Pinger limit is exhausted', user)
+                log_print("Pinger limit exhausted",  
+                          chat_id=update.message.chat_id,
+                          username=username,
+                          level="INFO",
+                          command="ping_add")
                 return
 
         answer = ""
@@ -183,6 +199,13 @@ class Pinger:
                             me=me)
                         ses.add(ping)
                         answer += "Match `{0}` for user `@{1}` has been added\n".format(match, username)
+                        log_print("Match added",  
+                                  chat_id=update.message.chat_id,
+                                  ping_username=username, 
+                                  match=match,
+                                  username=update.message.from_user.username,
+                                  level="INFO",
+                                  command="ping_add")
                     else:
                         answer += "Match `{0}` for user `@{1}` already exists!\n".format(match, username)
 

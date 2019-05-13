@@ -19,7 +19,11 @@ async def answer_parser(config, bot, update):
             literal(in_text).contains(Answers.match))
     for message in ["".join(i) for i in out_text]:
         bot.send_message(chat_id=update.message.chat_id, text=message)
-        log_print("Answer", update.message.from_user.username)
+        log_print("Answer",
+                  chat_id=update.message.chat_id,
+                  username=username,
+                  level="INFO",
+                  command="answer")
 
 
 async def ping_parser(config, bot, update):
@@ -73,7 +77,12 @@ async def ping_parser(config, bot, update):
                 out_text = " ".join(["@" + i for i in usernames])
                 bot.send_message(chat_id=update.message.chat_id, reply_to_message_id=update.message.message_id,
                                  text=out_text)
-                log_print('Ping "{0}"'.format(out_text), username)
+                log_print("Ping",
+                          chat_id=update.message.chat_id,
+                          username=username,
+                          pinged=out_text,
+                          level="INFO",
+                          command="ping")
         except NoResultFound:
             pass
 
@@ -82,6 +91,5 @@ def parser(config, bot, update):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(asyncio.gather(ping_parser(config, bot, update),
-                                           answer_parser(config, bot, update))
-                           )
+                                           answer_parser(config, bot, update)))
     loop.close()

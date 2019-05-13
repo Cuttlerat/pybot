@@ -19,7 +19,11 @@ def mute_on(config, bot, update):
     else:
         config.set_mute(True)
         message = "Global silence activated."
-        log_print('Mute on', username)
+        log_print("Mute on",
+                  chat_id=update.message.chat_id,
+                  username=username, 
+                  level="INFO",
+                  command="mute_on")
     bot.send_message(chat_id=update.message.chat_id,
                      text=message)
 
@@ -35,7 +39,11 @@ def mute_off(config, bot, update):
     if config.get_mute():
         config.set_mute(False)
         message = "Global silence deactivated."
-        log_print('Mute off', username)
+        log_print("Mute off", 
+                  chat_id=update.message.chat_id,
+                  username=username,
+                  level="INFO",
+                  command="mute_off")
     else:
         message = "Global silence is not activated."
 
@@ -48,6 +56,7 @@ def mute(config, bot, update):
     user_id=update.message.from_user.id
     if config.get_mute():
         try:
+            log_print("Muted", username=user_id, chat_id=chat_id, level="INFO", command="mute")
             bot.restrict_chat_member(chat_id, user_id, until_date=time()+300)
         except BadRequest:
             return

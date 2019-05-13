@@ -40,8 +40,19 @@ https://www.codingame.com/clashofcode/clash/{clash_id}
 Please send /clash_disable if you don't want to receive these notifications
         """.format(clash_id=clash_id, users=users)
         last_game["clash_id"] = clash_id
+        log_print("Created", 
+                  chat_id=update.message.chat_id,
+                  username=username,
+                  clash_id=clash_id,
+                  level="INFO",
+                  command="clash")
     else:
-        clash_id = "Error"
+        log_print("Failed on creating",
+                  chat_id=update.message.chat_id,
+                  username=username,
+                  clash_id=clash_id,
+                  level="ERROR",
+                  command="clash")
         message = "Something went wrong..."
 
     sent = bot.send_message(chat_id=update.message.chat_id,
@@ -54,7 +65,6 @@ Please send /clash_disable if you don't want to receive these notifications
         file.write(json.dumps(last_game))
 
 
-    log_print('Clash of Code "{}"'.format(clash_id))
 
 
 def clash_start(config, bot, update):
@@ -84,11 +94,21 @@ def clash_start(config, bot, update):
                     message = '{users}\n\n{msg}'.format(
                         users=last_game["users"],
                         msg=message)
-                log_print('Clash of Code "{}" started'.format(last_game["clash_id"]))
+                log_print("Started",
+                          chat_id=update.message.chat_id,
+                          username=username,
+                          clash_id=clash_id,
+                          level="INFO",
+                          command="clash_start")
             else:
                 message = 'Could not start "{}" Clash game...'.format(
                     last_game["clash_id"])
-                log_print(message)
+                log_print("Failed on start",
+                          chat_id=update.message.chat_id,
+                          username=username,
+                          clash_id=clash_id,
+                          level="ERROR",
+                          command="clash_start")
         else:
             last_game["message_id"] = update.message.message_id
             message = 'Only @{} is allowed to start the game'.format(last_game["username"])
@@ -128,7 +148,12 @@ def clash_disable(config, bot, update):
     bot.send_message(chat_id=update.message.chat_id,
             reply_to_message_id=message_id,
             text=msg)
-    log_print('Clash of Code disable', username)
+    log_print("Disabled",
+              chat_id=update.message.chat_id,
+              username=username,
+              clash_id=clash_id,
+              level="INFO",
+              command="clash_disable")
 
 def clash_enable(config, bot, update):
     username = update.message.from_user.username
@@ -151,7 +176,12 @@ def clash_enable(config, bot, update):
             reply_to_message_id=message_id,
             text=msg,
             parse_mode="markdown")
-    log_print('Clash of Code enable', username)
+    log_print("Enabled",
+              chat_id=update.message.chat_id,
+              username=username,
+              clash_id=clash_id,
+              level="INFO",
+              command="clash_disable")
 
 def clash_results_usage(config, bot, update):
 
@@ -248,4 +278,9 @@ def clash_results(config, bot, update, args):
                               caption='https://www.codingame.com/clashofcode/clash/report/{}'.format(
                                        clash_id))
 
-    log_print('Clash of Code results for {}'.format(", ".join(clash_ids)))
+    log_print("Results",
+              chat_id=update.message.chat_id,
+              username=username,
+              clash_id=clash_id,
+              level="INFO",
+              command="clash_results")

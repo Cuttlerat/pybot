@@ -85,7 +85,7 @@ def main():
     clash_disable_handler,\
     clash_results_handler = (handler(act, config) for act in functions)
 
-    log_print('Started')
+    log_print('Started', level="INFO", command="main")
 
     try:
         create_table(config)

@@ -43,7 +43,12 @@ def weather(config, bot, update, args):
         observation = owm.weather_at_place(city)
     except (UnauthorizedError, NotFoundError, NotImplementedError) as e:
         bot.send_message(chat_id=update.message.chat_id, text=str(e))
-        log_print('Weather "{0}"'.format(str(e)), username)
+        log_print("City not found",
+                  chat_id=update.message.chat_id,
+                  username=username,
+                  error=str(e),
+                  level="ERROR",
+                  command="weather")
         return
 
     forecast = owm.three_hours_forecast(city)
@@ -110,7 +115,12 @@ def weather(config, bot, update, args):
     except IndexError:
         error_message = "Something wrong with API:\n\n{}".format(weathers)
         bot.send_message(chat_id=update.message.chat_id, text=error_message)
-        log_print('"{0}"'.format(error_message), username)
+        log_print("Error with a weather API",
+                  chat_id=update.message.chat_id,
+                  username=username,
+                  error=error_message,
+                  level="ERROR",
+                  command="weather")
         return
 
     message = "\n".join([k.strip() for k in message.split('\n')])
@@ -118,7 +128,12 @@ def weather(config, bot, update, args):
     bot.send_message(chat_id=update.message.chat_id,
                      parse_mode="markdown", text=message)
 
-    log_print('Weather "{0}"'.format(city), username)
+    log_print("Weather",
+              chat_id=update.message.chat_id,
+              username=username,
+              city=city,
+              level="INFO",
+              command="weather")
 
 
 def wset(config, bot, update, args):
@@ -157,7 +172,12 @@ def wset(config, bot, update, args):
                 out_text = "Added @{0}: {1}".format(username, city)
 
     bot.send_message(chat_id=update.message.chat_id, text=out_text)
-    log_print('Wset "{0}"'.format(out_text))
+    log_print("Wset",
+              chat_id=update.message.chat_id,
+              username=username,
+              city=city,
+              level="INFO",
+              command="wset")
 
 
 def get_emoji(weather_status):

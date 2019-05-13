@@ -18,7 +18,7 @@ def connector(engine):
         session.commit()
     except:
         error = str(sys.exc_info())
-        log_print("Error is: ", error)
+        log_print(error, level="ERROR", command="connector")
         session.rollback()
         raise
     finally:

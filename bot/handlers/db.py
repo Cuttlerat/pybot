@@ -35,4 +35,8 @@ def database_handler(config, bot, update, args):
 
     if out_text:
         bot.send_message(chat_id=update.message.chat_id, text=out_text)
-        log_print('Manage "{0}"'.format(command), update.message.from_user.username)
+        log_print(command, 
+                  username=update.message.from_user.username,
+                  chat_id=update.message.chat_id,
+                  level="INFO",
+                  command="db")

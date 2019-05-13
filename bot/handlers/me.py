@@ -31,5 +31,10 @@ def me(config, bot, update, args):
                          parse_mode=telegram.ParseMode.MARKDOWN)
         bot.delete_message(chat_id=update.message.chat_id,
                            message_id=update.message.message_id)
-        log_print('Me by {1}'.format(username, update.message.from_user.username))
+        log_print("Me",
+                  chat_id=update.message.chat_id,
+                  match=match,
+                  username=username,
+                  level="INFO",
+                  command="me")
 
