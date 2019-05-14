@@ -113,3 +113,6 @@ class Config:
         if self.__engine is None:
             raise NotImplementedError("Path to database in config-file is not declared")
         return self.__engine
+
+    def log_level(self):
+        return self.__log_level
