@@ -57,6 +57,8 @@ telegram:
   listen_ip: 0.0.0.0 # Your IP
 database:
   host: data/pybot.db
+log:
+  level: INFO               # Can be one of ["DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"]
 admins:
   - Username1
   - Username2
