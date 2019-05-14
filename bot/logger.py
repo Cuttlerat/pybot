@@ -10,7 +10,7 @@ class Log:
              "ERROR": 3,
              "CRITICAL": 4}
 
-    def __init__(self, level):
+    def __init__(self):
         from config import Config
         from odr.container import register
         config = Config()
