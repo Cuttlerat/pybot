@@ -18,7 +18,7 @@ class Log:
         self.level = config.log_level()
 
     def print(self, level="DEBUG", message={}):
-        if level not in self.levels:
+        if level not in self.levels.items():
             level="ERROR"
             message={"error": "Log level is incorrect",
                      "failed_message": message}
