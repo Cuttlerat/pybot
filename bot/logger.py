@@ -35,4 +35,4 @@ log = Log()
 
 def log_print(message, level="DEBUG", **kwargs):
     log_message = {"message": message, **kwargs}
-    log.print(log_message)
+    log.print(level, log_message)
