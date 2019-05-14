@@ -2,6 +2,7 @@ from datetime import datetime
 from dateutil.tz import tzlocal
 import json
 
+
 class Log:
 
     levels ={"DEBUG": 0,
@@ -15,7 +16,7 @@ class Log:
         from odr.container import register
         config = Config()
         register(config)
-        self.level = config.log_level()
+        self.level = config.log_level
 
     def print(self, level="DEBUG", message={}):
         if level not in self.levels:
