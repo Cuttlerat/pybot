@@ -21,7 +21,7 @@ class Log:
         if level not in self.levels:
             level="ERROR"
             message={"error": "Log level is incorrect",
-                     "failed_message": {"log_level": level, **message}
+                     "failed_message": {"log_level": level, **message}}
 
         if self.levels[level] >= self.levels[self.level]:
             message.update({"timestamp": self.get_timestamp(),
