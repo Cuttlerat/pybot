@@ -15,7 +15,7 @@ class Log:
         from odr.container import register
         config = Config()
         register(config)
-        self.level = config.loglevel()
+        self.level = config.log_level()
 
     def print(self, level="DEBUG", message={}):
         if level not in levels:
