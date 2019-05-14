@@ -18,12 +18,12 @@ class Log:
         self.level = config.log_level()
 
     def print(self, level="DEBUG", message={}):
-        if level not in levels:
+        if level not in self.levels:
             level="ERROR"
             message={"error": "Log level is incorrect",
                      "failed_message": message}
 
-        if levels[level] >= levels[self.level]:
+        if self.levels[level] >= self.levels[self.level]:
             message.update({"timestamp": self.get_timestamp(),
                             "log_level": level})
             print(json.dumps(message))
