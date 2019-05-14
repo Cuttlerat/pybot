@@ -28,7 +28,7 @@ class Log:
                             "log_level": level})
             print(json.dumps(message))
 
-    def get_timestamp():
+    def get_timestamp(self):
         return datetime.now(tzlocal()).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 log = Log()
