@@ -278,7 +278,9 @@ def clash_results(config, bot, update, args):
     if args:
         clash_ids = (list(set(args)))
     else:
-        clash_ids = [get_last_game(config, username, update.message.chat_id)["clash_id"]]
+        last_id = get_last_game(config, username, update.message.chat_id)["clash_id"]
+        if last_id:
+            clash_ids = [last_id]
 
     if not clash_ids:
         clash_results_usage(config, bot, update)
@@ -290,7 +292,7 @@ def clash_results(config, bot, update, args):
                           data='[{}]'.format(clash_id))
         if r.status_code == 200:
             results = json.loads(r.text)
-            if results["success"]:
+            if "success" in results and results["success"]:
                 leaderboard = []
                 clash_mode = results["success"]["mode"].capitalize() if "mode" in results["success"] else "Unknown"
                 message = '''
