@@ -46,8 +46,8 @@ class Config:
         self.__redis_db = cfg['redis']['db'] if 'db' in cfg['redis'] else 0
         try:
             self.__redis = redis.StrictRedis(host=self.__redis_host,
-                                             port=seld.__redis_port,
-                                             db=seld.__redis_db)
+                                             port=self.__redis_port,
+                                             db=self.__redis_db)
         except redis.RedisError as e:
             log_print("Could not connect to Redis",
                       error=str(e),
