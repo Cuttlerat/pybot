@@ -66,21 +66,24 @@ Please send /clash_disable if you don't want to receive these notifications
 
 
 def save_last_game(config, last_game, chat_id):
-    try:
-        redis_db = redis.StrictRedis(host=config.redis_host,
-                                     port=config.redis_port,
-                                     db=config.redis_db)
-        redis_db.set("clash_{}".format(chat_id), json.dumps(last_game))
-        log_print("Saved to redis",
-                  last_game=last_game,
-                  key="clash_{}".format(chat_id),
-                  level="DEBUG",
-                  func="save_last_game")
-    except redis.RedisError as e:
-        log_print("Could not save last_game to redis",
-                  error=str(e),
-                  level="WARN",
-                  command="clash")
+    redis_db = config.redis
+    saved_to_redis = False
+    if redis_db:
+        try:
+            redis_db.set("clash_{}".format(chat_id), json.dumps(last_game))
+            log_print("Saved to redis",
+                      last_game=last_game,
+                      key="clash_{}".format(chat_id),
+                      level="DEBUG",
+                      func="save_last_game")
+            saved_to_redis = True
+        except redis.RedisError as e:
+            log_print("Could not save last_game to redis",
+                      error=str(e),
+                      level="WARN",
+                      command="clash")
+
+    if not saved_to_redis:
         try:
             with open("/tmp/clash_{}".format(update.message.chat_id), "w") as file:
                 file.write(json.dumps(last_game))
@@ -88,34 +91,39 @@ def save_last_game(config, last_game, chat_id):
             log_print("Could not save last_game to file",
                       error=str(io_e),
                       level="CRITICAL",
-                      command="clash")
+                      command="save_last_game")
             raise
 
 def get_last_game(config, chat_id):
-    try:
-        redis_db = redis.StrictRedis(host=config.redis_host,
-                                     port=config.redis_port,
-                                     db=config.redis_db)
-        last_game = json.loads(redis_db.get("clash_{}".format(chat_id)))
-        log_print("Read from redis",
-                  last_game=last_game,
-                  key="clash_{}".format(chat_id),
-                  level="DEBUG",
-                  func="save_last_game")
-    except redis.RedisError as e:
-        log_print("Could not read last_game from redis",
-                  error=str(e),
-                  level="WARN",
-                  command="clash")
+
+    redis_db = config.redis
+    got_from_redis = False
+    last_game = {"clash_id":"", "message_id":"", "users": "", "username": username}
+
+    if redis_db:
+        try:
+            last_game = json.loads(redis_db.get("clash_{}".format(chat_id)))
+            log_print("Read from redis",
+                      last_game=last_game,
+                      key="clash_{}".format(chat_id),
+                      level="DEBUG",
+                      func="get_last_game")
+            got_from_redis = True
+        except redis.RedisError as e:
+            log_print("Could not read last_game from redis",
+                      error=str(e),
+                      level="WARN",
+                      command="clash")
+
+    if not got_from_redis:
         try:
             with open("/tmp/clash_{}".format(update.message.chat_id), "r") as file:
                 last_game = json.loads(file.read())
         except IOError:
-            log_print("Could not read last_game from file",
+            log_print("Could not read last_game from file and redis",
                       error=str(io_e),
-                      level="CRITICAL",
-                      command="clash")
-            last_game = {"clash_id":"", "message_id":"", "username": username}
+                      level="WARN",
+                      command="get_last_game")
 
     return last_game
 

@@ -1,6 +1,8 @@
 import glob
 
 import yaml
+import redis
+from logging import log_print
 from sqlalchemy import create_engine
 
 
@@ -42,6 +44,15 @@ class Config:
         self.__redis_host = cfg['redis']['host'] if 'host' in cfg['redis'] else "localhost"
         self.__redis_port = cfg['redis']['port'] if 'port' in cfg['redis'] else 6379
         self.__redis_db = cfg['redis']['db'] if 'db' in cfg['redis'] else 0
+        try:
+            self.__redis = redis.StrictRedis(host=config.redis_host,
+                                         port=config.redis_port,
+                                         db=config.redis_db)
+        except redis.RedisError as e:
+            log_print("Could not connect to Redis",
+                      error=str(e),
+                      level="WARN")
+            self.__redis = None
 
         self.__log_level = cfg['log']['level'] if 'log' in cfg and 'level' in cfg['log'] else "INFO"
 
@@ -129,6 +140,10 @@ class Config:
     @property
     def redis_db(self):
         return self.__redis_db
+
+    @property
+    def redis(self):
+        return self.__redis
 
     @property
     def log_level(self):
