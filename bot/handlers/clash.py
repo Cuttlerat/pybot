@@ -91,10 +91,10 @@ def save_last_game(config, last_game, chat_id):
             log_print("Could not save last_game to file",
                       error=str(io_e),
                       level="CRITICAL",
-                      command="save_last_game")
+                      func="save_last_game")
             raise
 
-def get_last_game(config, chat_id):
+def get_last_game(config, username, chat_id):
 
     redis_db = config.redis
     got_from_redis = False
@@ -123,7 +123,7 @@ def get_last_game(config, chat_id):
             log_print("Could not read last_game from file and redis",
                       error=str(io_e),
                       level="WARN",
-                      command="get_last_game")
+                      func="get_last_game")
 
     return last_game
 
@@ -131,7 +131,7 @@ def clash_start(config, bot, update):
 
     username = update.message.from_user.username
 
-    last_game = get_last_game(config, update.message.chat_id)
+    last_game = get_last_game(config, username, update.message.chat_id)
 
     if last_game["clash_id"]:
         if last_game["username"] == username:
