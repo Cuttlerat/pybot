@@ -85,7 +85,7 @@ def save_last_game(config, last_game, chat_id):
 
     if not saved_to_redis:
         try:
-            with open("/tmp/clash_{}".format(update.message.chat_id), "w") as file:
+            with open("/tmp/clash_{}".format(chat_id), "w") as file:
                 file.write(json.dumps(last_game))
         except IOError as io_e:
             log_print("Could not save last_game to file",
@@ -117,7 +117,7 @@ def get_last_game(config, username, chat_id):
 
     if not got_from_redis:
         try:
-            with open("/tmp/clash_{}".format(update.message.chat_id), "r") as file:
+            with open("/tmp/clash_{}".format(chat_id), "r") as file:
                 last_game = json.loads(file.read())
         except IOError:
             log_print("Could not read last_game from file and redis",
