@@ -11,4 +11,10 @@ services:
           - ./bot/data:/yoba/data
           - ./bot/fonts:/usr/share/fonts:ro
           - ./bot/config:/yoba/config:ro
+        links:
+          - redis
         restart: always
+
+    redis:
+        image: redis:5.0.4-alpine
+

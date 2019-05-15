@@ -10,3 +10,4 @@ pytest
 odr
 tabulate
 Pillow
+redis
