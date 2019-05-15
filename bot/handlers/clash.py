@@ -118,9 +118,9 @@ def get_last_game(config, username, chat_id):
 
     if not got_from_redis:
         last_game = get_last_game_from_file(config, username, chat_id)
-    elif os.path.isfile("clash_{}".format(chat_id)):
+    elif os.path.isfile("/tmp/clash_{}".format(chat_id)):
         last_game = get_last_game_from_file(config, username, chat_id)
-        os.remove("clash_{}".format(chat_id))
+        os.remove("/tmp/clash_{}".format(chat_id))
         save_last_game(config, last_game, chat_id)
 
     return last_game
