@@ -62,7 +62,7 @@ Please send /clash_disable if you don't want to receive these notifications
     last_game["username"] = username
     last_game["message_id"] = sent.message_id
 
-    save_last_game(config, last_game, chat_id)
+    save_last_game(config, last_game, update.message.chat_id)
 
 
 def save_last_game(config, last_game, chat_id):
