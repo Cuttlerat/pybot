@@ -2,7 +2,7 @@ import glob
 
 import yaml
 import redis
-from logging import log_print
+from logger import log_print
 from sqlalchemy import create_engine
 
 
