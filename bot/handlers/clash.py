@@ -8,6 +8,7 @@ from tabulate import tabulate
 from PIL import Image, ImageDraw, ImageFont
 import io
 import redis
+import os
 
 def clash(config, bot, update):
     last_game={}
