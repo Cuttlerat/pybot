@@ -80,7 +80,7 @@ async def ping_parser(config, bot, update):
                 log_print("Ping",
                           chat_id=update.message.chat_id,
                           username=username,
-                          pinged=out_text,
+                          pinged=out_text.split(),
                           level="INFO",
                           command="ping")
         except NoResultFound:
