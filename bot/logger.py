@@ -3,16 +3,16 @@ from dateutil.tz import tzlocal
 import json
 
 
-class Watchmen(type):
+class Watchman(type):
     _instances = {}
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
-            cls._instances[cls] = super(Watchmen, cls).__call__(*args, **kwargs)
+            cls._instances[cls] = super(Watchman, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
 
 
-class Log(metaclass=Watchmen):
+class Log(metaclass=Watchman):
 
     levels ={"DEBUG": 0,
              "INFO": 1,
