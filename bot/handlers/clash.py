@@ -249,13 +249,14 @@ def clash_results_to_byte_arr(message):
 
 def clash_results(config, bot, update, args):
 
+    username = update.message.from_user.username
     clash_ids = []
     results = {}
 
     if args:
         clash_ids = (list(set(args)))
     else:
-        clash_ids = [json.loads(get_last_game(config, update.message.chat_id))["clash_id"]]
+        clash_ids = [get_last_game(config, update.message.chat_id)["clash_id"]]
 
     if not clash_ids:
         clash_results_usage(config, bot, update)
