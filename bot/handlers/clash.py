@@ -119,7 +119,7 @@ def get_last_game(config, username, chat_id):
         try:
             with open("/tmp/clash_{}".format(chat_id), "r") as file:
                 last_game = json.loads(file.read())
-        except IOError:
+        except IOError as io_e:
             log_print("Could not read last_game from file and redis",
                       error=str(io_e),
                       level="WARN",
