@@ -41,8 +41,8 @@ class Log(metaclass=Watchman):
     def get_timestamp(self):
         return datetime.now(tzlocal()).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-log = Log()
 
 def log_print(message, level="DEBUG", **kwargs):
     log_message = {"message": message, **kwargs}
+    log = Log()
     log.print(level, log_message)
