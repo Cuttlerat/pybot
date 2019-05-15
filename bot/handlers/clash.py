@@ -98,7 +98,7 @@ def get_last_game(config, username, chat_id):
 
     redis_db = config.redis
     got_from_redis = False
-    last_game = {"clash_id":"", "message_id":"", "users": "", "username": username}
+    delete_file_after_read = False
 
     if redis_db:
         try:
@@ -116,15 +116,25 @@ def get_last_game(config, username, chat_id):
                       command="clash")
 
     if not got_from_redis:
-        try:
-            with open("/tmp/clash_{}".format(chat_id), "r") as file:
-                last_game = json.loads(file.read())
-        except IOError as io_e:
-            log_print("Could not read last_game from file and redis",
-                      error=str(io_e),
-                      level="WARN",
-                      func="get_last_game")
+        last_game = get_last_game_from_file(config, username, chat_id)
+    elif os.path.isfile("clash_{}".format(chat_id)):
+        last_game = get_last_game_from_file(config, username, chat_id)
+        os.remove("clash_{}".format(chat_id))
+        save_last_game(config, last_game, chat_id)
 
+    return last_game
+
+def get_last_game_from_file(config, username, chat_id):
+
+    last_game = {"clash_id":"", "message_id":"", "users": "", "username": username}
+    try:
+        with open("/tmp/clash_{}".format(chat_id), "r") as file:
+            last_game = json.loads(file.read())
+    except IOError as io_e:
+        log_print("Could not read last_game from file",
+                  error=str(io_e),
+                  level="WARN",
+                  func="get_last_game")
     return last_game
 
 def clash_start(config, bot, update):
