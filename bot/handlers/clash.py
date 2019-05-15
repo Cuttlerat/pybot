@@ -69,6 +69,11 @@ def save_last_game(config, last_game, chat_id):
     try:
         redis_db = redis.StrictRedis(host=config.redis_host, port=config.redis_port, db=config.redis_db)
         redis_db.set("clash_{}".format(chat_id), json.dumps(last_game))
+        log_print("Saved to redis",
+                  last_game=last_game,
+                  key="clash_{}".format(chat_id),
+                  level="DEBUG",
+                  func="save_last_game")
     except redis.RedisError as e:
         log_print("Could not save last_game to redis",
                   error=str(e),
@@ -88,6 +93,11 @@ def get_last_game(config, chat_id):
     try:
         redis_db = redis.StrictRedis(host=config.redis_host, port=config.redis_port, db=config.redis_db)
         last_game = json.loads(redis_db.get("clash_{}".format(chat_id)))
+        log_print("Read from redis",
+                  last_game=last_game,
+                  key="clash_{}".format(chat_id),
+                  level="DEBUG",
+                  func="save_last_game")
     except redis.RedisError as e:
         log_print("Could not read last_game from redis",
                   error=str(e),
