@@ -14,12 +14,12 @@ def clash(config, bot, update):
     last_game={}
     username = update.message.from_user.username
     last_id = get_last_game(config, username, update.message.chat_id)["clash_id"]
-    clash_ud = ""
+    clash_id = ""
 
     if last_id:
         r = requests.post('https://www.codingame.com/services/ClashOfCodeRemoteService/findClashReportInfoByHandle',
                           headers={"content-type":"application/json;charset=UTF-8"},
-                          data='[{}]'.format(clash_id))
+                          data='[{}]'.format(last_id))
         if r.status_code == 200:
             results = json.loads(r.text)
             if "mode" in results["success"]:
