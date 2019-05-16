@@ -47,13 +47,13 @@ def clash(config, bot, update):
             out_text = ""
         users=" ".join(["@{}".format(user) for user in users])
         message = """
-Clas Code!
+Clash of Code!
 
-httpwww.codingame.com/clashofcode/clash/{clash_id}
+https://www.codingame.com/clashofcode/clash/{clash_id}
 
-{use
+{users}
 
-Pleaend /clash_disable if you don't want to receive these notifications
+Please send /clash_disable if you don't want to receive these notifications
         """.format(clash_id=clash_id, users=users)
         last_game["clash_id"] = clash_id
         log_print("Created",
