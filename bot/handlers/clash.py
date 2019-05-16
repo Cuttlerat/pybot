@@ -13,13 +13,13 @@ import os
 def clash(config, bot, update):
     last_game={}
     username = update.message.from_user.username
-    last_id = get_last_game(config, username, update.message.chat_id)["clash_id"]
+    last_game = get_last_game(config, username, update.message.chat_id)
     clash_id = ""
 
-    if last_id:
+    if last_game["clash_id"]:
         r = requests.post('https://www.codingame.com/services/ClashOfCodeRemoteService/findClashReportInfoByHandle',
                           headers={"content-type":"application/json;charset=UTF-8"},
-                          data='[{}]'.format(last_id))
+                          data='[{}]'.format(last_game["clash_id"]))
         if r.status_code == 200:
             results = json.loads(r.text)
             if "mode" in results["success"]:
@@ -34,48 +34,50 @@ def clash(config, bot, update):
                 if r.status_code == 200:
                     clash_id = json.loads(r.text)["success"]["publicHandle"]
             else:
-                clash_id = last_id
+                bot.delete_message(chat_id=update.message.chat_id,
+                                   message_id=last_game["message_id"])
+                clash_id = last_game["clash_id"]
 
-        if clash_id:
-            with connector(config.engine()) as ses:
-                all_matches = ses.query(Pingers.username).filter(Pingers.chat_id == update.message.chat_id).order_by(Pingers.username).distinct().all()
-                exclude = ses.query(ClashExclude.username).filter(ClashExclude.chat_id == update.message.chat_id).all()
-                users = [ x for x in all_matches if x not in exclude ]
-                users = [ x for x in users for x in x ]
-                out_text = ""
-            users=" ".join(["@{}".format(user) for user in users])
-            message = """
-Clash of Code!
+    if clash_id:
+        with connector(config.engine()) as ses:
+            all_matches = ses.query(Pingers.username).filter(Pingers.chat_id == update.message.chat_id).order_by(Pingers.username).distinct().all()
+            exclude = ses.query(ClashExclude.username).filter(ClashExclude.chat_id == update.message.chat_id).all()
+            users = [ x for x in all_matches if x not in exclude ]
+            users = [ x for x in users for x in x ]
+            out_text = ""
+        users=" ".join(["@{}".format(user) for user in users])
+        message = """
+Clas Code!
 
-https://www.codingame.com/clashofcode/clash/{clash_id}
+httpwww.codingame.com/clashofcode/clash/{clash_id}
 
-{users}
+{use
 
-Please send /clash_disable if you don't want to receive these notifications
-            """.format(clash_id=clash_id, users=users)
-            last_game["clash_id"] = clash_id
-            log_print("Created",
-                      chat_id=update.message.chat_id,
-                      username=username,
-                      clash_id=clash_id,
-                      level="INFO",
-                      command="clash")
-        else:
-            log_print("Failed on creating",
-                      chat_id=update.message.chat_id,
-                      username=username,
-                      clash_id=clash_id,
-                      level="ERROR",
-                      command="clash")
-            message = "Something went wrong..."
+Pleaend /clash_disable if you don't want to receive these notifications
+        """.format(clash_id=clash_id, users=users)
+        last_game["clash_id"] = clash_id
+        log_print("Created",
+                  chat_id=update.message.chat_id,
+                  username=username,
+                  clash_id=clash_id,
+                  level="INFO",
+                  command="clash")
+    else:
+        log_print("Failed on creating",
+                  chat_id=update.message.chat_id,
+                  username=username,
+                  clash_id=clash_id,
+                  level="ERROR",
+                  command="clash")
+        message = "Something went wrong..."
 
-        sent = bot.send_message(chat_id=update.message.chat_id,
-                         text=message)
-        last_game["users"] = users
-        last_game["username"] = username
-        last_game["message_id"] = sent.message_id
+    sent = bot.send_message(chat_id=update.message.chat_id,
+                     text=message)
+    last_game["users"] = users
+    last_game["username"] = username
+    last_game["message_id"] = sent.message_id
 
-        save_last_game(config, last_game, update.message.chat_id)
+    save_last_game(config, last_game, update.message.chat_id)
 
 
 def save_last_game(config, last_game, chat_id):
